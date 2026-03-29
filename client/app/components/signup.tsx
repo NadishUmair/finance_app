@@ -15,6 +15,8 @@ export default function Signup() {
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -26,18 +28,20 @@ export default function Signup() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setMessage("");
+    setError("");
 
     try {
-      const response = await axios.post(
-        `${BASE_URL}/user_signup`,
-        formData
-      );
+      const response = await axios.post(`${BASE_URL}/user_signup`, formData);
       console.log(response);
-    } catch (error) {
-      console.log(error);
+      setMessage(response.data?.message || "User created successfully");
+    } catch (err: any) {
+      console.error(err);
+      const serverMessage = err?.response?.data?.message;
+      setError(serverMessage || "Failed to create user");
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   return (
@@ -157,6 +161,13 @@ export default function Signup() {
             >
               {isLoading ? "Creating..." : "Create Secure Account"}
             </button>
+
+            {message && (
+              <p className="text-center text-green-300 font-semibold">{message}</p>
+            )}
+            {error && (
+              <p className="text-center text-red-300 font-semibold">{error}</p>
+            )}
 
             <p className="text-center text-slate-400">
               Already have an account?{" "}
