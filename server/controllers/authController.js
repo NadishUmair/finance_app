@@ -2,12 +2,14 @@ const { prisma } = require("../config/db");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
+
+// SignUp controller
 exports.SignUp = async (req, res) => {
   try {
     console.log("SignUp called", req.body);
-    const { firstname, lastname, email, password } = req.body;
+    const { firstname, lastname, orgName, email, password } = req.body;
 
-    if (!firstname || !email || !password) {
+    if (!firstname || !email || !orgName || !password) {
       return res.status(400).json({
         success: false,
         message: "firstname, email, and password are required",
@@ -17,6 +19,7 @@ exports.SignUp = async (req, res) => {
     const emailExist = await prisma.user.findUnique({
       where: { email },
     });
+    console.log("emailexist",emailExist)
 
     if (emailExist) {
       return res.status(400).json({
@@ -27,7 +30,8 @@ exports.SignUp = async (req, res) => {
 
     const hashPassword = await bcrypt.hash(password, 10);
 
-    const user = await prisma.user.create({
+    const result = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({
       data: {
         firstname,
         lastname,
@@ -35,13 +39,32 @@ exports.SignUp = async (req, res) => {
         password: hashPassword,
       },
     });
+   
+    const organization = await tx.organization.create({
+      data: {
+        name: orgName,
+        currency: "USD",
+        createdAt: new Date()
+      }
+    })
+    
+    await tx.membership.create({
+      data: {
+        userId: user.id,
+        organizationId: organization.id,
+        role: "ADMIN"
+      }
+    })
+   
+    return (user,organization);
+  });
 
-    console.log("User created", { id: user.id, email: user.email });
+    // console.log("User created", { id: user.id, email: user.email });
 
     return res.status(201).json({
       success: true,
       message: "User created successfully",
-      data: { id: user.id, email: user.email },
+      data: result,
     });
 
   } catch (error) {
@@ -58,13 +81,19 @@ exports.SignUp = async (req, res) => {
 
 
 
-
+// Login controller
 exports.Login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
     const user = await prisma.user.findUnique({
       where: { email },
+      include: {
+        memberships: {
+        include: {
+          organization: true 
+        }
+      }}
     });
 
     if (!user) {
@@ -83,18 +112,28 @@ exports.Login = async (req, res) => {
       });
     }
 
-    const accessToken = jwt.sign(
-      { id: user.id },
+    const membership = user.memberships[0];
+
+    const token = jwt.sign(
+      { userId: user.id,
+        organizationId: membership.organizationId,
+        role: membership.role
+       },
       process.env.JWTSECRET,
       { expiresIn: "7d" }
     );
 
     const { password: _, ...userWithoutPassword } = user;
 
-    return res.status(200).json({
+      return res.status(200).json({
       success: true,
-      data: userWithoutPassword,
-      accessToken,
+      accessToken: token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: membership.role,
+        orgId: membership.organizationId,
+      },
     });
 
   } catch (error) {
@@ -105,3 +144,6 @@ exports.Login = async (req, res) => {
     });
   }
 };
+
+
+//Update password

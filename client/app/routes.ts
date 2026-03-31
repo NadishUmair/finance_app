@@ -2,9 +2,11 @@ import { type RouteConfig, index, route } from "@react-router/dev/routes";
 
 export default [
   index("routes/home.tsx"),
-  route("signup", "components/signup.tsx"),
-  route("login", "components/login.tsx"),
+  route("signup", "components/auth/signup.tsx"),
+  route("login", "components/auth/login.tsx"),
   route("about-us", "components/about.tsx"),
   route("contact-us", "components/contactus.tsx"),
   route("services", "components/services.tsx"),
+  route("forgot-password", "components/auth/forgetPassword.tsx"),
+  route("reset-password/:token", "components/auth/resetPassword.tsx"),
 ] satisfies RouteConfig;

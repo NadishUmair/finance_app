@@ -10,6 +10,7 @@ export default function Signup() {
   const [formData, setFormData] = useState({
     firstname: "",
     lastname: "",
+    orgName:"",
     email: "",
     password: "",
   });
@@ -136,7 +137,17 @@ export default function Signup() {
                 className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-slate-400 focus:outline-none focus:border-cyan-400"
               />
             </div>
+               
+              <input
+                type="text"
+                name="orgName"
+                value={formData.orgName}
+                onChange={handleChange}
+                placeholder="Organization Name"
+                className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-slate-400 focus:outline-none focus:border-cyan-400"
+              />
 
+      
             <input
               type="email"
               name="email"

@@ -2,12 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { Link } from "react-router";
 import { motion } from "framer-motion";
-import {
-  ShieldCheck,
-  BarChart3,
-  Lock,
-  CheckCircle2,
-} from "lucide-react";
+import { ShieldCheck, BarChart3, Lock, CheckCircle2 } from "lucide-react";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -46,7 +41,6 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center relative overflow-hidden">
-      
       {/* Animated Finance Background */}
       <motion.div
         className="absolute w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl top-10 left-10"
@@ -60,7 +54,6 @@ export default function Login() {
       />
 
       <div className="grid lg:grid-cols-2 max-w-6xl w-full mx-6 rounded-3xl overflow-hidden border border-white/10 shadow-2xl backdrop-blur-xl bg-white/5 relative z-10">
-        
         {/* LEFT SIDE */}
         <div className="hidden lg:flex flex-col justify-center p-12 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border-r border-white/10">
           <p className="uppercase tracking-[4px] text-cyan-400 text-sm mb-4">
@@ -72,8 +65,8 @@ export default function Login() {
           </h1>
 
           <p className="text-slate-300 mt-6 leading-8">
-            Access real-time reports, bookkeeping dashboards,
-            tax-ready records, and strategic financial insights.
+            Access real-time reports, bookkeeping dashboards, tax-ready records,
+            and strategic financial insights.
           </p>
 
           <div className="mt-10 space-y-5">
@@ -108,9 +101,7 @@ export default function Login() {
 
         {/* RIGHT FORM */}
         <div className="p-10 lg:p-14">
-          <h2 className="text-4xl font-bold mb-3">
-            Login To Dashboard
-          </h2>
+          <h2 className="text-4xl font-bold mb-3">Login To Dashboard</h2>
 
           <p className="text-slate-400 mb-8">
             Securely access your financial workspace.
@@ -152,13 +143,18 @@ export default function Login() {
             >
               {isLoading ? "Signing In..." : "Secure Login"}
             </button>
+            <p className="text-right text-sm text-slate-400">
+              <Link
+                to="/forgot-password"
+                className="text-cyan-400 hover:text-cyan-300"
+              >
+                Forgot Password?
+              </Link>
+            </p>
 
             <p className="text-center text-slate-400">
               Don’t have an account?{" "}
-              <Link
-                to="/signup"
-                className="text-cyan-400 hover:text-cyan-300"
-              >
+              <Link to="/signup" className="text-cyan-400 hover:text-cyan-300">
                 Create account
               </Link>
             </p>

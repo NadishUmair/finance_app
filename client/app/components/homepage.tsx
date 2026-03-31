@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, CheckCircle2, BarChart3, ShieldCheck, Wallet, DollarSign, TrendingUp, PieChart } from "lucide-react";
 import FAQSection from "./faqs";
 import Footer from "./footer";
+import RolesSection from "./roles";
 
 // Services
 const services = [
@@ -112,6 +113,8 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+       {/* Roles */}
+       <RolesSection/>
 
       {/* TESTIMONIALS */}
       <section className="px-6 lg:px-20 py-24 z-10 relative">
