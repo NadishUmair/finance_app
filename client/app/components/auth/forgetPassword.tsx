@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router";
 import { motion } from "framer-motion";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 export default function ForgotPassword() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -15,7 +17,11 @@ export default function ForgotPassword() {
 
     try {
       const res = await axios.post(`${BASE_URL}/forgot-password`, { email });
-      setMessage("Reset link sent to your email");
+      setMessage("OTP sent to your email. Redirecting to reset page...");
+
+      setTimeout(() => {
+        navigate("/reset-password",{state:{email}});
+      }, 1200);
     } catch (err) {
       setMessage("Something went wrong");
     }
@@ -53,7 +59,7 @@ export default function ForgotPassword() {
           />
 
           <button className="w-full bg-cyan-500 py-4 rounded-2xl font-bold text-black">
-            {isLoading ? "Sending..." : "Send Reset Link"}
+            {isLoading ? "Sending..." : "Send OTP"}
           </button>
 
           {message && (

@@ -1,0 +1,49 @@
+# Webapp Project Status
+
+## ✅ Current implementation overview
+
+- **Client (React + React Router + Tailwind)**
+  - Routes:
+    - `/` home
+    - `/dashboard` (protected)
+    - `/forgot-password` and `/reset-password` flows
+  - Pages/UI components:
+    - auth: `login`, `signup`, `forgetPassword`, `resetPassword`
+    - dashboard: `dashboardHome`
+    - common: `homepage`, `about`, `certifications`, `contactus`, `faqs`, `roles`, `services`
+  - `resetPassword.tsx` handles OTP input with focus navigation and new password set.
+  - `root.tsx` now uses `useLocation()` inside `App()` for conditional navbar display.
+
+- **Server (Express + Prisma)**
+  - API endpoints in `routes/authRoutes.js`:
+    - `/register`, `/login`, `/logout`, `/forgot-password`, `/reset-password`, `/verify-otp` (assumed)
+  - Controllers in `controllers/authController.js`, `controllers/workSpaceController.js`.
+  - Middlewares:
+    - `middlewares/authMiddleware.js` for auth validation
+    - `middlewares/rbac.js` for role-based access control.
+  - Models:
+    - `models/user.js` user model integration with Prisma.
+  - Database schema in `prisma/schema.prisma` includes user, organization, role, OTP fields and migrations.
+
+- **Organization & RBAC**
+  - `add_org_roles` migration shows support for organization-level roles.
+  - `authMiddleware` + `rbac` used to gate dashboard and workspace routes.
+
+## 📌 What’s fixed this session
+
+1. `resetPassword.tsx` ref handling and types
+   - changed `inputsRef` from `useRef([])` to `useRef<(HTMLInputElement | null)[]>([])`
+   - fixed `inputsRef.current[index - 1]?.focus()` typing and logic
+2. `root.tsx` bug `Cannot read properties of null (reading 'useContext')`
+   - moved `useLocation()` inside `App()` to comply with hook rules
+
+## 🚀 Next goals
+
+- Finish OTP API hookup and error messages in UI
+- Add user flow checks: successful reset -> redirect /login
+- Add org + RBAC UI: role selector for workspace
+- Harden validation and security for password reset endpoints
+
+---
+
+*Status updated on:* `2026-04-01`.

@@ -5,6 +5,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLocation,
 } from "react-router";
 
 import type { Route } from "./+types/root";
@@ -42,9 +43,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const location = useLocation();
+  const hiddeNavbarRoutes =
+    location.pathname.startsWith("/dashboard") ||
+    location.pathname.startsWith("/forgot-password") ||
+    location.pathname.startsWith("/reset-password");
+
   return (
     <>
-      <Navbar />
+      {!hiddeNavbarRoutes && <Navbar />}
       <Outlet />
     </>
   );

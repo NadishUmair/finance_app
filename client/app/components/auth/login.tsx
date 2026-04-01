@@ -3,12 +3,15 @@ import axios from "axios";
 import { Link } from "react-router";
 import { motion } from "framer-motion";
 import { ShieldCheck, BarChart3, Lock, CheckCircle2 } from "lucide-react";
-
+import { Eye, EyeOff } from "lucide-react"; // Add this at the top with other imports
+import { useNavigate } from "react-router";
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 export default function Login() {
   const [email, setEmail] = useState("");
+  const navigate = useNavigate();
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({
     email: "",
     password: "",
@@ -26,12 +29,15 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const response = await axios.post(`${BASE_URL}/user_login`, {
+      const response = await axios.post(`${BASE_URL}/user-login`, {
         email,
         password,
       });
 
       console.log("response", response);
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 1000);
     } catch (error) {
       console.log("error", error);
     }
@@ -40,7 +46,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen  bg-slate-950 text-white flex items-center justify-center relative overflow-hidden">
       {/* Animated Finance Background */}
       <motion.div
         className="absolute w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl top-10 left-10"
@@ -124,17 +130,21 @@ export default function Login() {
               )}
             </div>
 
-            <div>
+            <div className="relative">
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-slate-400 focus:outline-none focus:border-cyan-400"
+                className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 pr-12 text-white placeholder-slate-400 focus:outline-none focus:border-cyan-400"
               />
-              {errors.password && (
-                <p className="text-red-400 mt-2">{errors.password}</p>
-              )}
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-cyan-400"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
             </div>
 
             <button

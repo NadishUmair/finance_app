@@ -33,7 +33,7 @@ export default function Signup() {
     setError("");
 
     try {
-      const response = await axios.post(`${BASE_URL}/user_signup`, formData);
+      const response = await axios.post(`${BASE_URL}/user-signup`, formData);
       console.log(response);
       setMessage(response.data?.message || "User created successfully");
     } catch (err: any) {

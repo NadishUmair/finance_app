@@ -8,5 +8,6 @@ export default [
   route("contact-us", "components/contactus.tsx"),
   route("services", "components/services.tsx"),
   route("forgot-password", "components/auth/forgetPassword.tsx"),
-  route("reset-password/:token", "components/auth/resetPassword.tsx"),
+  route("reset-password", "components/auth/resetPassword.tsx"),
+  route("dashboard", "components/dashboard/dashboardHome.tsx"),
 ] satisfies RouteConfig;
