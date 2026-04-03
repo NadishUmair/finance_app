@@ -3,6 +3,10 @@ const cors = require("cors");
 require("dotenv").config();
 
 const authRoutes = require("./routes/authRoutes");
+const accountRoutes = require("./routes/accountRoutes");
+const transactionRoutes = require("./routes/transactionRoutes");
+const invoiceRoutes = require("./routes/invoiceRoute");
+const reportsRoutes = require("./routes/reportsRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -15,6 +19,10 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/accounts", accountRoutes);
+app.use("/api/transactions", transactionRoutes);
+app.use("/api/invoices", invoiceRoutes);
+app.use("/api/reports", reportsRoutes);
 
 app.listen(PORT, () => {
   console.log("App is running at", PORT);

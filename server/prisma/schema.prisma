@@ -7,44 +7,303 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  ACCOUNTANT
+  VIEWER
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+enum TransactionStatus {
+  PENDING
+  CLEARED
+  RECONCILED
+  VOID
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  VIEWED
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum AccountType {
+  CASH
+  BANK
+  CREDIT_CARD
+  ACCOUNTS_RECEIVABLE
+  ACCOUNTS_PAYABLE
+  REVENUE
+  EXPENSE_ACCOUNT
+  EQUITY
+}
+
+enum RecurrenceInterval {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+// ─── Core User & Org ─────────────────────────────────────────────────────────
+
 model User {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   firstname String
   lastname  String?
-  email     String   @unique
+  email     String    @unique
   password  String
 
   otp       Int?
   otpExpiry DateTime?
+
   createdAt DateTime @default(now())
 
-  memberships Membership[]    
+  memberships  Membership[]
+  invoices     Invoice[]    @relation("CreatedByUser")
+  auditLogs    AuditLog[]
 }
 
-model Organization{
-  id           Int     @id @default(autoincrement())
-  name         String
-  currency     String  @default("USD")
-  createdAt   DateTime @default(now())
+model Organization {
+  id        Int      @id @default(autoincrement())
+  name      String
+  currency  String   @default("USD")
+  createdAt DateTime @default(now())
 
-  memberships Membership[] 
+  memberships  Membership[]
+  accounts     Account[]
+  categories   Category[]
+  transactions Transaction[]
+  invoices     Invoice[]
+  recurringRules RecurringRule[]
+  auditLogs    AuditLog[]
 }
 
+model Membership {
+  id             Int          @id @default(autoincrement())
+  userId         Int
+  organizationId Int
+  role           Role         @default(VIEWER)
 
-model Membership{
-  id                 Int   @id @default(autoincrement())
-  userId             Int
-  organizationId     Int
-  role               Role  @default(VIEWER)
+  user         User         @relation(fields: [userId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
 
-  user               User    @relation(fields: [userId], references: [id])
-  organization       Organization @relation(fields: [organizationId], references: [id])
-
-  @@unique([userId,organizationId])
+  @@unique([userId, organizationId])
 }
 
-enum Role{
-  ADMIN
-  ACCOUNTANT
-  VIEWER
+// ─── Chart of Accounts ───────────────────────────────────────────────────────
+
+model Account {
+  id             Int         @id @default(autoincrement())
+  organizationId Int
+  name           String
+  type           AccountType
+  currency       String      @default("USD")
+  balance        Decimal     @default(0) @db.Decimal(15, 2)
+  bankName       String?
+  accountNumber  String?     // last 4 digits only
+  isActive       Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  organization      Organization  @relation(fields: [organizationId], references: [id])
+  fromTransactions  Transaction[] @relation("FromAccount")
+  toTransactions    Transaction[] @relation("ToAccount")
+
+  @@index([organizationId])
+}
+
+// ─── Categories ──────────────────────────────────────────────────────────────
+
+model Category {
+  id             Int      @id @default(autoincrement())
+  organizationId Int
+  name           String
+  color          String?  // hex color for UI
+  icon           String?  // icon name
+  isDefault      Boolean  @default(false)
+  parentId       Int?     // for subcategories
+
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  parent       Category?     @relation("SubCategories", fields: [parentId], references: [id])
+  children     Category[]    @relation("SubCategories")
+  transactions Transaction[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+// ─── Transactions ─────────────────────────────────────────────────────────────
+
+model Transaction {
+  id             Int               @id @default(autoincrement())
+  organizationId Int
+  fromAccountId  Int
+  toAccountId    Int?              // used for transfers
+  categoryId     Int?
+  invoiceId      Int?              // links payment to an invoice
+
+  type           TransactionType
+  status         TransactionStatus @default(PENDING)
+
+  amount         Decimal           @db.Decimal(15, 2)
+  currency       String            @default("USD")
+  exchangeRate   Decimal?          @db.Decimal(10, 6) // for multi-currency
+
+  description    String?
+  notes          String?
+  reference      String?           // e.g. check number, bank ref
+  date           DateTime
+
+  // AI fields
+  aiCategory     String?           // Claude's suggested category
+  aiConfidence   Float?            // 0.0 - 1.0
+  isAiReviewed   Boolean           @default(false)
+
+  // Receipt / attachment
+  receiptUrl     String?
+
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  fromAccount  Account      @relation("FromAccount", fields: [fromAccountId], references: [id])
+  toAccount    Account?     @relation("ToAccount", fields: [toAccountId], references: [id])
+  category     Category?    @relation(fields: [categoryId], references: [id])
+  invoice      Invoice?     @relation(fields: [invoiceId], references: [id])
+
+  @@index([organizationId])
+  @@index([date])
+  @@index([categoryId])
+  @@index([status])
+}
+
+// ─── Invoices ────────────────────────────────────────────────────────────────
+
+model Invoice {
+  id             Int           @id @default(autoincrement())
+  organizationId Int
+  createdById    Int
+
+  invoiceNumber  String        // e.g. INV-2024-001
+  status         InvoiceStatus @default(DRAFT)
+
+  // Client info (snapshot — not a relation, so it survives client edits)
+  clientName     String
+  clientEmail    String?
+  clientAddress  String?
+  clientPhone    String?
+
+  issueDate      DateTime      @default(now())
+  dueDate        DateTime
+
+  subtotal       Decimal       @db.Decimal(15, 2)
+  taxRate        Decimal       @default(0) @db.Decimal(5, 2)  // percentage
+  taxAmount      Decimal       @default(0) @db.Decimal(15, 2)
+  discountAmount Decimal       @default(0) @db.Decimal(15, 2)
+  total          Decimal       @db.Decimal(15, 2)
+  amountPaid     Decimal       @default(0) @db.Decimal(15, 2)
+  amountDue      Decimal       @db.Decimal(15, 2)
+
+  currency       String        @default("USD")
+  notes          String?
+  terms          String?       // payment terms text
+
+  // PDF
+  pdfUrl         String?
+
+  // AI
+  aiSummary      String?       // Claude-generated summary for the client
+
+  sentAt         DateTime?
+  viewedAt       DateTime?
+  paidAt         DateTime?
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  createdBy    User          @relation("CreatedByUser", fields: [createdById], references: [id])
+  lineItems    InvoiceLineItem[]
+  transactions Transaction[]
+
+  @@unique([organizationId, invoiceNumber])
+  @@index([organizationId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model InvoiceLineItem {
+  id          Int     @id @default(autoincrement())
+  invoiceId   Int
+  description String
+  quantity    Decimal @db.Decimal(10, 2)
+  unitPrice   Decimal @db.Decimal(15, 2)
+  amount      Decimal @db.Decimal(15, 2) // quantity × unitPrice
+  order       Int     @default(0)        // for ordering line items
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+}
+
+// ─── Recurring Rules ─────────────────────────────────────────────────────────
+
+model RecurringRule {
+  id             Int                @id @default(autoincrement())
+  organizationId Int
+  name           String
+  description    String?
+
+  amount         Decimal            @db.Decimal(15, 2)
+  type           TransactionType
+  categoryId     Int?
+  fromAccountId  Int?
+
+  interval       RecurrenceInterval
+  startDate      DateTime
+  endDate        DateTime?          // null = runs forever
+  nextRunDate    DateTime
+  lastRunDate    DateTime?
+
+  isActive       Boolean            @default(true)
+  createdAt      DateTime           @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([nextRunDate])  // for the cron job to query efficiently
+}
+
+// ─── Audit Log ───────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id             Int      @id @default(autoincrement())
+  organizationId Int
+  userId         Int
+  action         String   // e.g. "INVOICE_SENT", "TRANSACTION_DELETED"
+  entity         String   // e.g. "Invoice", "Transaction"
+  entityId       Int
+  before         Json?    // snapshot before change
+  after          Json?    // snapshot after change
+  ipAddress      String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@index([organizationId])
+  @@index([entity, entityId])
 }
