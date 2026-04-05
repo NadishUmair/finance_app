@@ -29,7 +29,7 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const response = await axios.post(`${BASE_URL}/user-login`, {
+      const response = await axios.post(`${BASE_URL}/auth/user-login`, {
         email,
         password,
       });

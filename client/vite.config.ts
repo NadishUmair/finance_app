@@ -5,4 +5,10 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
   plugins: [tailwindcss(), reactRouter(), tsconfigPaths()],
+    server: {
+    proxy: {
+      '/api': 'http://localhost:5000'  // point to your Express port
+    }
+  }
 });
+

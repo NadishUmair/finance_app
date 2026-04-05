@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { Edit, Trash2, Search, Filter, Plus } from 'lucide-react';
-import CategoryBadge from './CategoryBadge';
+import CategoryBadge from '../CategoryBadge';
+import { Button } from '../ui/button';
 
 interface Transaction {
   id: number;
@@ -95,13 +96,13 @@ export default function TransactionTable({
       <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold text-gray-900">Transactions</h2>
-          <button
+          <Button
             onClick={onCreate}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            className="gap-2"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4" />
             New Transaction
-          </button>
+          </Button>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4">

@@ -1,49 +1,235 @@
-# Webapp Project Status
+# FinanceHub - AI-Powered Finance Automation System
 
-## ✅ Current implementation overview
+A comprehensive full-stack web application for automated bookkeeping, financial management, and business intelligence. Built with modern technologies to streamline financial operations for small to medium businesses.
 
-- **Client (React + React Router + Tailwind)**
-  - Routes:
-    - `/` home
-    - `/dashboard` (protected)
-    - `/forgot-password` and `/reset-password` flows
-  - Pages/UI components:
-    - auth: `login`, `signup`, `forgetPassword`, `resetPassword`
-    - dashboard: `dashboardHome`
-    - common: `homepage`, `about`, `certifications`, `contactus`, `faqs`, `roles`, `services`
-  - `resetPassword.tsx` handles OTP input with focus navigation and new password set.
-  - `root.tsx` now uses `useLocation()` inside `App()` for conditional navbar display.
+## 🚀 Features
 
-- **Server (Express + Prisma)**
-  - API endpoints in `routes/authRoutes.js`:
-    - `/register`, `/login`, `/logout`, `/forgot-password`, `/reset-password`, `/verify-otp` (assumed)
-  - Controllers in `controllers/authController.js`, `controllers/workSpaceController.js`.
-  - Middlewares:
-    - `middlewares/authMiddleware.js` for auth validation
-    - `middlewares/rbac.js` for role-based access control.
-  - Models:
-    - `models/user.js` user model integration with Prisma.
-  - Database schema in `prisma/schema.prisma` includes user, organization, role, OTP fields and migrations.
+### Core Functionality
+- **Multi-Organization Support**: Create and manage multiple business entities with role-based access control (Admin, Accountant, Viewer)
+- **Complete Chart of Accounts**: Support for all major account types (Cash, Bank, Credit Card, AR/AP, Revenue, Expenses, Equity)
+- **Transaction Management**: Full CRUD operations with AI-powered categorization and reconciliation
+- **Invoice Automation**: Create, send, and track invoices with automated PDF generation
+- **Expense Tracking**: Comprehensive expense management with receipt uploads
+- **Reports Generation**: Financial reports with charts and analytics
+- **Cash Flow Insights**: Real-time cash flow analysis and forecasting
+- **Auto Bookkeeping**: AI-assisted transaction categorization and automated recurring entries
 
-- **Organization & RBAC**
-  - `add_org_roles` migration shows support for organization-level roles.
-  - `authMiddleware` + `rbac` used to gate dashboard and workspace routes.
+### AI Integration
+- **Smart Categorization**: Claude AI automatically categorizes transactions based on descriptions
+- **Invoice Summaries**: AI-generated summaries for client communications
+- **Confidence Scoring**: AI provides confidence levels for automated decisions
 
-## 📌 What’s fixed this session
+### Security & Compliance
+- **JWT Authentication**: Secure token-based authentication
+- **OTP Verification**: Email-based OTP for password resets
+- **Role-Based Access Control**: Granular permissions for different user roles
+- **Audit Logging**: Complete audit trail for all financial operations
+- **Data Encryption**: Secure password hashing and data protection
 
-1. `resetPassword.tsx` ref handling and types
-   - changed `inputsRef` from `useRef([])` to `useRef<(HTMLInputElement | null)[]>([])`
-   - fixed `inputsRef.current[index - 1]?.focus()` typing and logic
-2. `root.tsx` bug `Cannot read properties of null (reading 'useContext')`
-   - moved `useLocation()` inside `App()` to comply with hook rules
+## 🛠️ Technology Stack
 
-## 🚀 Next goals
+### Frontend
+- **React 19** with TypeScript
+- **React Router v7** for routing
+- **Tailwind CSS** for styling
+- **shadcn/ui** component library
+- **Recharts** for data visualization
+- **Framer Motion** for animations
+- **React Query** for state management
+- **PapaParse** for CSV import/export
 
-- Finish OTP API hookup and error messages in UI
-- Add user flow checks: successful reset -> redirect /login
-- Add org + RBAC UI: role selector for workspace
-- Harden validation and security for password reset endpoints
+### Backend
+- **Node.js** with Express.js
+- **Prisma ORM** with PostgreSQL
+- **JWT** for authentication
+- **bcrypt** for password hashing
+- **Nodemailer** for email services
+- **Anthropic Claude API** for AI features
+
+### Database
+- **PostgreSQL** with Prisma migrations
+- **Comprehensive schema** for financial data
+- **Multi-currency support**
+- **Audit logging**
+
+## 📊 Data Model
+
+### Core Entities
+- **Users**: Authentication and profile management
+- **Organizations**: Multi-tenant business entities
+- **Memberships**: User-organization relationships with roles
+- **Accounts**: Chart of accounts with balances
+- **Categories**: Transaction categorization with subcategories
+- **Transactions**: Financial transactions with AI metadata
+- **Invoices**: Billing with line items and PDF generation
+- **Recurring Rules**: Automated recurring transactions
+- **Audit Logs**: Complete activity tracking
+
+### Key Features
+- **Multi-currency transactions** with exchange rates
+- **Transaction reconciliation** and status tracking
+- **Invoice lifecycle management** (Draft → Sent → Paid)
+- **Recurring transaction automation**
+- **Receipt attachment support**
+
+## 🔧 API Endpoints
+
+### Authentication
+- `POST /user-signup` - User registration
+- `POST /user-login` - User login
+- `POST /forgot-password` - Password reset request
+- `POST /verify-otp` - OTP verification
+- `PATCH /reset-password` - Password reset
+
+### Transactions
+- `POST /` - Create transaction
+- `GET /` - List transactions
+- `GET /:id` - Get transaction details
+- `PATCH /:id` - Update transaction
+- `DELETE /:id` - Delete transaction
+
+### Invoices
+- `POST /` - Create invoice
+- `GET /` - List invoices
+- `GET /:id` - Get invoice details
+- `PATCH /:id` - Update invoice
+- `DELETE /:id` - Delete invoice
+
+### Reports
+- `GET /` - Generate financial reports
+
+### Accounts
+- `POST /` - Create account
+- `GET /` - List accounts
+- `GET /:id` - Get account details
+- `PATCH /:id` - Update account
+- `DELETE /:id` - Delete account
+
+## 🎨 User Interface
+
+### Dashboard Features
+- **Finance Dashboard**: Overview with key metrics and charts
+- **Expense Tracking**: Expense management interface
+- **Invoice Automation**: Invoice creation and management
+- **Auto Bookkeeping**: AI-assisted transaction processing
+- **Reports Generation**: Custom report builder
+- **Cash Flow Insights**: Cash flow analysis tools
+
+### Authentication Flow
+- User registration and login
+- Password reset with OTP verification
+- Protected routes with middleware
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+
+- PostgreSQL 13+
+- npm or yarn
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd webapp
+   ```
+
+2. **Install server dependencies**
+   ```bash
+   cd server
+   npm install
+   ```
+
+3. **Install client dependencies**
+   ```bash
+   cd ../client
+   npm install
+   ```
+
+4. **Database Setup**
+   ```bash
+   cd ../server
+   # Configure your PostgreSQL connection in .env
+   npx prisma migrate dev
+   npx prisma generate
+   ```
+
+5. **Environment Configuration**
+   Create `.env` files in both `server/` and `client/` directories with necessary environment variables.
+
+6. **Start Development Servers**
+   ```bash
+   # Terminal 1: Start server
+   cd server
+   npm run dev
+
+   # Terminal 2: Start client
+   cd ../client
+   npm run dev
+   ```
+
+## 📁 Project Structure
+
+```
+webapp/
+├── client/                          # React frontend
+│   ├── app/
+│   │   ├── components/
+│   │   │   ├── auth/               # Authentication components
+│   │   │   ├── dashboard/          # Dashboard features
+│   │   │   └── ui/                 # Reusable UI components
+│   │   ├── hooks/                  # Custom React hooks
+│   │   ├── lib/                    # Utilities
+│   │   ├── routes/                 # Route components
+│   │   └── welcome/                # Welcome/onboarding
+│   ├── public/                     # Static assets
+│   └── package.json
+├── server/                          # Node.js backend
+│   ├── config/                     # Database configuration
+│   ├── controllers/                # Route controllers
+│   ├── middlewares/                # Express middlewares
+│   ├── models/                     # Data models
+│   ├── prisma/                     # Database schema & migrations
+│   ├── routes/                     # API routes
+│   ├── util/                       # Utilities (email, OTP)
+│   └── package.json
+└── README.md
+```
+
+## 🔐 Security Features
+
+- **Password Hashing**: bcrypt with salt rounds
+- **JWT Tokens**: Secure authentication tokens
+- **OTP Verification**: Time-limited OTP for password resets
+- **Input Validation**: Comprehensive input sanitization
+- **CORS Configuration**: Proper cross-origin handling
+- **Rate Limiting**: Protection against brute force attacks
+
+## 🤖 AI Integration
+
+The system leverages Anthropic's Claude AI for:
+- **Transaction Categorization**: Automatically suggests categories based on transaction descriptions
+- **Invoice Summaries**: Generates professional summaries for client communications
+- **Confidence Scoring**: Provides reliability scores for AI suggestions
+
+## 📈 Future Enhancements
+
+- **Multi-currency dashboard** with real-time exchange rates
+- **Advanced reporting** with custom date ranges and filters
+- **Bank integration** for automatic transaction import
+- **Mobile app** companion application
+- **API integrations** with accounting software (QuickBooks, Xero)
+- **Advanced analytics** with predictive insights
+
+## 📝 License
+
+This project is proprietary software. All rights reserved.
+
+## 👥 Contributing
+
+Please follow the established code style and submit pull requests for review.
 
 ---
 
-*Status updated on:* `2026-04-01`.
+*Last updated: April 4, 2026*

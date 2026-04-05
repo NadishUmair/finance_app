@@ -210,7 +210,7 @@ const FinanceDashboard = () => {
 
         invoices: [
           {
-            id: 'INV-2024-001',
+            id: 2024001,
             clientName: 'Acme Industries',
             amount: 12500.00,
             issueDate: '2024-01-10',
@@ -219,7 +219,7 @@ const FinanceDashboard = () => {
             automated: true,
           },
           {
-            id: 'INV-2024-008',
+            id: 2024008,
             clientName: 'Tech Solutions Inc',
             amount: 8750.00,
             issueDate: '2024-01-20',
@@ -228,7 +228,7 @@ const FinanceDashboard = () => {
             automated: true,
           },
           {
-            id: 'INV-2024-009',
+            id: 2024009,
             clientName: 'Global Enterprises',
             amount: 15300.00,
             issueDate: '2024-01-15',
@@ -237,7 +237,7 @@ const FinanceDashboard = () => {
             automated: false,
           },
           {
-            id: 'INV-2024-010',
+            id: 2024010,
             clientName: 'Creative Agency Co',
             amount: 6200.00,
             issueDate: '2024-01-22',
@@ -278,13 +278,13 @@ const FinanceDashboard = () => {
     trendValue?: string;
     subtitle?: string;
   }) => (
-    <div className="bg-gradient-to-br from-white to-slate-50 rounded-xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-linear-to-br from-white to-slate-50 rounded-xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-4">
         <div>
           <p className="text-sm font-medium text-slate-600">{title}</p>
           <p className="text-3xl font-bold text-slate-900 mt-2">{value}</p>
         </div>
-        <div className="p-3 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100">
+        <div className="p-3 rounded-lg bg-linear-to-br from-blue-50 to-blue-100">
           {Icon}
         </div>
       </div>
@@ -317,7 +317,7 @@ const FinanceDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-slate-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="relative w-12 h-12">
             <div className="absolute inset-0 rounded-full border-4 border-blue-200"></div>
@@ -330,7 +330,7 @@ const FinanceDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-slate-50">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-slate-50">
       {/* Sticky Header */}
       <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-6 py-4">
@@ -700,19 +700,19 @@ const FinanceDashboard = () => {
 
               {/* Invoice Stats */}
               <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg p-4 border border-emerald-200">
+                <div className="bg-linear-to-br from-emerald-50 to-teal-50 rounded-lg p-4 border border-emerald-200">
                   <p className="text-sm text-emerald-700 font-medium">Paid</p>
                   <p className="text-2xl font-bold text-emerald-900 mt-1">
                     ${data.invoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + i.amount, 0).toLocaleString()}
                   </p>
                 </div>
-                <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-4 border border-blue-200">
+                <div className="bg-linear-to-br from-blue-50 to-cyan-50 rounded-lg p-4 border border-blue-200">
                   <p className="text-sm text-blue-700 font-medium">Pending</p>
                   <p className="text-2xl font-bold text-blue-900 mt-1">
                     ${data.invoices.filter(i => i.status === 'pending').reduce((sum, i) => sum + i.amount, 0).toLocaleString()}
                   </p>
                 </div>
-                <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-lg p-4 border border-red-200">
+                <div className="bg-linear-to-br from-red-50 to-orange-50 rounded-lg p-4 border border-red-200">
                   <p className="text-sm text-red-700 font-medium">Overdue</p>
                   <p className="text-2xl font-bold text-red-900 mt-1">
                     ${data.invoices.filter(i => i.status === 'overdue').reduce((sum, i) => sum + i.amount, 0).toLocaleString()}
@@ -822,7 +822,7 @@ const FinanceDashboard = () => {
 
               {/* Status Overview */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 border border-blue-200">
+                <div className="bg-linear-to-br from-blue-50 to-blue-100 rounded-lg p-6 border border-blue-200">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="font-semibold text-slate-900">
                       Automation Rate
@@ -845,7 +845,7 @@ const FinanceDashboard = () => {
                   </p>
                 </div>
 
-                <div className="bg-gradient-to-br from-emerald-50 to-teal-100 rounded-lg p-6 border border-emerald-200">
+                <div className="bg-linear-to-br from-emerald-50 to-teal-100 rounded-lg p-6 border border-emerald-200">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="font-semibold text-slate-900">
                       Processed Transactions

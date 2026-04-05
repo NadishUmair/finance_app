@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, Plus } from 'lucide-react';
-import TransactionTable from '../components/TransactionTable';
-import TransactionForm from '../components/TransactionForm';
-import CSVImport from '../components/CSVImport';
-import DashboardLayout from '../components/dashboard/DashboardLayout';
-import { useTransactions } from '../hooks/useTransactions';
+import TransactionTable from './TransactionTable';
+import TransactionForm from './TransactionForm';
+import CSVImport from '../CSVImport';
+
+import { useTransactions } from '../../hooks/useTransactions';
+import { Button } from '../ui/button';
 
 interface Account {
   id: number;
@@ -20,14 +21,13 @@ interface Category {
   icon?: string;
 }
 
-export default function TransactionsPage() {
+export default function Transactions() {
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<any>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
 
-  // Initialize with default organization ID (should come from auth context)
   const {
     transactions,
     loading,
@@ -40,14 +40,13 @@ export default function TransactionsPage() {
     deleteTransaction,
     refreshTransactions,
   } = useTransactions({
-    organizationId: 1, // TODO: Get from auth context
+    organizationId: 1,
     page: 1,
     limit: 20,
     sortBy: 'date',
     sortOrder: 'desc',
   });
 
-  // Fetch accounts and categories on mount
   useEffect(() => {
     fetchAccounts();
     fetchCategories();
@@ -55,7 +54,6 @@ export default function TransactionsPage() {
 
   const fetchAccounts = async () => {
     try {
-      // TODO: Replace with actual API call
       const response = await fetch('/api/accounts?organizationId=1');
       const data = await response.json();
       if (data.success) {
@@ -68,7 +66,6 @@ export default function TransactionsPage() {
 
   const fetchCategories = async () => {
     try {
-      // TODO: Replace with actual API call
       const response = await fetch('/api/categories?organizationId=1');
       const data = await response.json();
       if (data.success) {
@@ -128,11 +125,10 @@ export default function TransactionsPage() {
 
   const handleCSVImport = async (parsedTransactions: any[]) => {
     try {
-      // Process each transaction
       for (const transaction of parsedTransactions) {
         await createTransaction({
           organizationId: filters.organizationId,
-          fromAccountId: 1, // TODO: Let user select default account
+          fromAccountId: 1,
           type: transaction.type,
           status: 'PENDING' as const,
           amount: transaction.amount,
@@ -141,7 +137,7 @@ export default function TransactionsPage() {
           description: transaction.description,
           reference: transaction.reference,
           isAiReviewed: false,
-          fromAccount: {} as any, // This will be populated by the API
+          fromAccount: {} as any,
           toAccount: undefined,
           category: undefined,
           invoiceId: undefined,
@@ -156,40 +152,37 @@ export default function TransactionsPage() {
   };
 
   return (
-    <DashboardLayout>
+
       <div className="p-6 space-y-6">
-        {/* Header */}
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Transactions</h1>
             <p className="text-gray-600 mt-1">Manage your financial transactions and import bank statements</p>
           </div>
           <div className="flex gap-3">
-            <button
+            <Button
               onClick={handleImportClick}
               className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
             >
               <Upload className="h-4 w-4 mr-2" />
               Import CSV
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleCreateTransaction}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              className="gap-2"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4" />
               New Transaction
-            </button>
+            </Button>
           </div>
         </div>
 
-        {/* Error Display */}
         {error && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-800">{error}</p>
           </div>
         )}
 
-        {/* Transaction Table */}
         <TransactionTable
           transactions={transactions}
           onEdit={handleEditTransaction}
@@ -198,13 +191,11 @@ export default function TransactionsPage() {
           loading={loading}
         />
 
-        {/* Pagination Info */}
         {pagination && (
           <div className="flex justify-between items-center text-sm text-gray-500">
             <div>
               Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
-              {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
-              {pagination.total} transactions
+              {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} transactions
             </div>
             <div className="flex gap-2">
               <button
@@ -228,7 +219,6 @@ export default function TransactionsPage() {
           </div>
         )}
 
-        {/* Transaction Form Modal */}
         {showForm && (
           <TransactionForm
             transaction={editingTransaction}
@@ -240,7 +230,6 @@ export default function TransactionsPage() {
           />
         )}
 
-        {/* CSV Import Modal */}
         {showImport && (
           <CSVImport
             onImport={handleCSVImport}
@@ -248,6 +237,6 @@ export default function TransactionsPage() {
           />
         )}
       </div>
-    </DashboardLayout>
+ 
   );
 }

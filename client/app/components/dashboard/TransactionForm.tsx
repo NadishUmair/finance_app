@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Loader } from 'lucide-react';
+import { Button } from '../ui/button';
 
 interface Account {
   id: number;
@@ -310,18 +311,18 @@ export default function TransactionForm({
             >
               Cancel
             </button>
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="gap-2"
             >
               {loading ? (
-                <Loader className="h-4 w-4 mr-2 animate-spin" />
+                <Loader className="h-4 w-4 animate-spin" />
               ) : (
-                <Save className="h-4 w-4 mr-2" />
+                <Save className="h-4 w-4" />
               )}
               {transaction?.id ? 'Update' : 'Create'} Transaction
-            </button>
+            </Button>
           </div>
         </form>
       </div>

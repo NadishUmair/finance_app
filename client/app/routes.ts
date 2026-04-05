@@ -15,9 +15,6 @@ export default [
   route("auto-bookkeeping", "components/dashboard/auto-bookkeeping.tsx"),
   route("cash-flow-insights", "components/dashboard/cash-flow-insights.tsx"),
   route("invoice-automation", "components/dashboard/invoice-automation.tsx"),
-  route("reports-generation", "components/dashboard/resports-generation.tsx"),
-  route("transactions", "routes/transactions.tsx"),
-  route("invoices", "routes/invoices.tsx"),
-  route("reports", "routes/reports.tsx"),
-  route("settings", "routes/settings.tsx"),
+  route("reports-generation", "components/dashboard/reports-generation.tsx"),
+  route("transactions", "components/dashboard/transactions.tsx"),
 ] satisfies RouteConfig;

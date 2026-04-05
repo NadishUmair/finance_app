@@ -1,22 +1,31 @@
 const { prisma } = require("../config/db");
 const Anthropic = require("@anthropic-ai/sdk");
+const fs = require('fs');
+const Papa = require('papaparse');
+
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-// AI categorization function
+
+
+// 🧠 AI Categorization
 async function categorizeTransaction(description, amount, type) {
   try {
-    const prompt = `Categorize this financial transaction based on the description, amount, and type. Return only a JSON object with "category" and "confidence" fields.
+    const prompt = `
+Categorize this financial transaction.
 
 Description: "${description || ''}"
 Amount: ${amount}
 Type: ${type}
 
-Common categories: Office Supplies, Travel, Meals, Software, Marketing, Utilities, Rent, Salary, Consulting, Equipment, Advertising, Insurance, Professional Services, Training, Internet, Phone, Transportation, Entertainment, Miscellaneous.
+Categories:
+Office Supplies, Travel, Meals, Software, Marketing, Utilities, Rent, Salary, Consulting, Equipment, Advertising, Insurance, Professional Services, Training, Internet, Phone, Transportation, Entertainment, Miscellaneous.
 
-Return format: {"category": "Category Name", "confidence": 0.85}`;
+Return ONLY JSON:
+{"category": "Category Name", "confidence": 0.85}
+`;
 
     const response = await anthropic.messages.create({
       model: "claude-3-haiku-20240307",
@@ -24,45 +33,91 @@ Return format: {"category": "Category Name", "confidence": 0.85}`;
       messages: [{ role: "user", content: prompt }],
     });
 
-    const result = JSON.parse(response.content[0].text);
+    const text = response.content[0].text;
+    const result = JSON.parse(text);
+
     return {
       aiCategory: result.category,
       aiConfidence: result.confidence,
     };
   } catch (error) {
-    console.error("AI categorization error:", error);
+    console.error("AI error:", error);
     return { aiCategory: null, aiConfidence: null };
   }
 }
 
-exports.createTransaction = async (req, res) => {
-  try {
-    const { organizationId, fromAccountId, toAccountId, categoryId, invoiceId, type, status, amount, currency = "USD", date, description, reference } = req.body;
 
-    if (!organizationId || !fromAccountId || !type || !amount || !date) {
-      return res.status(400).json({ success: false, message: "organizationId, fromAccountId, type, amount and date are required" });
+// 🔁 CORE PROCESS FUNCTION (USED EVERYWHERE)
+async function processTransaction(tx) {
+  try {
+    // 🧠 1. Check memory (avoid repeated AI calls)
+    const existing = await prisma.transaction.findFirst({
+      where: {
+        description: tx.description,
+        aiCategory: { not: null },
+      },
+      select: {
+        aiCategory: true,
+        aiConfidence: true,
+      },
+    });
+
+    let aiCategory = null;
+    let aiConfidence = null;
+
+    if (existing) {
+      aiCategory = existing.aiCategory;
+      aiConfidence = existing.aiConfidence;
+    } else {
+      const aiResult = await categorizeTransaction(
+        tx.description,
+        tx.amount,
+        tx.type
+      );
+      aiCategory = aiResult.aiCategory;
+      aiConfidence = aiResult.aiConfidence;
     }
 
-    // AI categorization
-    const aiResult = await categorizeTransaction(description, amount, type);
+    // 🔧 2. Normalize data
+    return {
+      organizationId: tx.organizationId,
+      fromAccountId: tx.fromAccountId,
+      toAccountId: tx.toAccountId || null,
+      categoryId: tx.categoryId || null,
+      invoiceId: tx.invoiceId || null,
+      type: tx.type,
+      status: tx.status || "PENDING",
+      amount: Number(tx.amount),
+      currency: tx.currency || "USD",
+      date: new Date(tx.date),
+      description: tx.description || "",
+      reference: tx.reference || null,
+      aiCategory,
+      aiConfidence,
+    };
+  } catch (error) {
+    console.error("processTransaction error:", error);
+    throw error;
+  }
+}
 
-    const transaction = await prisma.Transaction.create({
-      data: {
-        organizationId,
-        fromAccountId,
-        toAccountId,
-        categoryId,
-        invoiceId,
-        type,
-        status,
-        amount,
-        currency,
-        date: new Date(date),
-        description,
-        reference,
-        aiCategory: aiResult.aiCategory,
-        aiConfidence: aiResult.aiConfidence,
-      },
+
+// ✅ CREATE SINGLE TRANSACTION
+exports.createTransaction = async (req, res) => {
+  try {
+    const data = req.body;
+
+    if (!data.organizationId || !data.fromAccountId || !data.amount || !data.date) {
+      return res.status(400).json({
+        success: false,
+        message: "Required fields missing",
+      });
+    }
+
+    const processed = await processTransaction(data);
+
+    const transaction = await prisma.transaction.create({
+      data: processed,
       include: {
         fromAccount: true,
         toAccount: true,
@@ -70,12 +125,57 @@ exports.createTransaction = async (req, res) => {
       },
     });
 
-    return res.status(201).json({ success: true, data: transaction });
+    return res.status(201).json({
+      success: true,
+      data: transaction,
+    });
   } catch (error) {
-    console.error("createTransaction error", error);
-    return res.status(500).json({ success: false, message: "Internal server error", error: error.message });
+    console.error("createTransaction error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
 };
+
+
+// 🚀 BULK CREATE (CSV IMPORT)
+exports.bulkCreateTransactions = async (req, res) => {
+  try {
+    const { transactions } = req.body;
+
+    if (!transactions || !Array.isArray(transactions)) {
+      return res.status(400).json({
+        success: false,
+        message: "Transactions array required",
+      });
+    }
+
+    const processedTransactions = [];
+
+    for (const tx of transactions) {
+      const processed = await processTransaction(tx);
+      processedTransactions.push(processed);
+    }
+
+    await prisma.transaction.createMany({
+      data: processedTransactions,
+    });
+
+    return res.json({
+      success: true,
+      count: processedTransactions.length,
+    });
+  } catch (error) {
+    console.error("bulkCreateTransactions error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Bulk insert failed",
+    });
+  }
+};
+
+
 
 exports.getTransactions = async (req, res) => {
   try {
@@ -303,3 +403,32 @@ exports.deleteTransaction = async (req, res) => {
     return res.status(500).json({ success: false, message: "Internal server error", error: error.message });
   }
 };
+
+
+exports.uploadCSV = async (req, res) => {
+    try {
+      console.log("body",req.body);
+      if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+      console.log("Uploaded file:", req.file);
+      
+      const fileContent = fs.readFileSync(req.file.path, 'utf-8');
+      const results = Papa.parse(fileContent, { header: true, skipEmptyLines: true });
+
+      const transactions = results.data.map((row) => {
+        const amount = parseFloat(row['Amount'] || '0');
+        return {
+          date: row['Txn Date'] || row['Date'],
+          description: row['Description'] || row['Memo'],
+          amount: Math.abs(amount),
+          type: amount > 0 ? 'INCOME' : 'EXPENSE',
+          reference: row['Reference'] || row['Ref'] || ''
+        };
+      });
+
+      fs.unlinkSync(req.file.path); // cleanup temp file
+      res.json({ transactions });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+

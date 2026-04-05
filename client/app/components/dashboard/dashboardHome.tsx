@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router';
 import {
   BarChart3,
   FileText,
@@ -18,15 +19,17 @@ import ExpenseTracking from './expense-tracking';
 import InvoiceAutomation from './invoice-automation';
 import AutoBookkeeping from './auto-bookkeeping';
 import CashFlowInsights from './cash-flow-insights';
-import ReportsGeneration from './resports-generation';
+import ReportsGeneration from './reports-generation';
+import Transactions from './transactions';
 
 
 
-type Feature = 'dashboard' | 'expenses' | 'invoices' | 'bookkeeping' | 'reports' | 'cashflow';
+type Feature = 'dashboard' | 'expenses' | 'invoices' | 'bookkeeping' | 'reports' | 'cashflow' | 'transactions';
 
 const navigationItems = [
   { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
   { id: 'expenses', label: 'Expense Tracking', icon: Receipt },
+  { id: 'transactions', label: 'Transactions', icon: CreditCard },
   { id: 'invoices', label: 'Invoice Automation', icon: FileText },
   { id: 'bookkeeping', label: 'Auto Bookkeeping', icon: Calculator },
   { id: 'reports', label: 'Reports', icon: TrendingUp },
@@ -34,8 +37,15 @@ const navigationItems = [
 ];
 
 export default function Home() {
+  const navigate = useNavigate();
   const [activeFeature, setActiveFeature] = useState<Feature>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const handleNavigation = (featureId: Feature) => {
+   
+      setActiveFeature(featureId);
+  
+  };
 
   const renderFeature = () => {
     switch (activeFeature) {
@@ -43,6 +53,8 @@ export default function Home() {
         return <FinanceDashboard />;
       case 'expenses':
         return <ExpenseTracking />;
+      case 'transactions':
+        return <Transactions/>;
       case 'invoices':
         return <InvoiceAutomation />;
       case 'bookkeeping':
@@ -79,11 +91,11 @@ export default function Home() {
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {navigationItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeFeature === item.id;
+            const isActive = activeFeature === item.id && item.id !== 'transactions';
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveFeature(item.id as Feature)}
+                onClick={() => handleNavigation(item.id as Feature)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                   isActive
                     ? 'bg-primary text-primary-foreground shadow-lg'
