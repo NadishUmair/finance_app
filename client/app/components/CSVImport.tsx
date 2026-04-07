@@ -216,13 +216,11 @@ export default function CSVImport({ onImport, onCancel }: CSVImportProps) {
               const formData = new FormData();
               formData.append("file", f);
 
-              const res = await fetch("/api/upload-csv", {
-                method: "POST",
-                body: formData,
+              const res = await axios.post("/api/transactions/upload-csv", formData, {
+                headers: { "Content-Type": "multipart/form-data" },
               });
-
-              const json = await res.json();
-              setParsedData(json.transactions);
+              console.log(res);
+              setParsedData(res.data.transactions);
             } catch (e) {
               setErrors(["Failed to process CSV"]);
             }
@@ -239,9 +237,7 @@ export default function CSVImport({ onImport, onCancel }: CSVImportProps) {
         const res = await axios.post("/upload-csv", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-        
 
-       
         setParsedData(json.transactions);
       } catch (err: any) {
         setErrors([err.message || "Upload failed"]);

@@ -109,17 +109,21 @@ exports.Login = async (req, res) => {
     }
 
     const membership = user.memberships[0];
+console.log("memebrship",membership);
+  const token = jwt.sign(
+  {
+    userId: user.id,
+    organizationId: membership.organizationId,
+    role: membership.role,
+  },
+  process.env.JWTSECRET,
+  { expiresIn: "7d" },
+);
 
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        organizationId: membership.organizationId,
-        role: membership.role,
-      },
-      process.env.JWTSECRET,
-      { expiresIn: "7d" },
-    );
-
+console.log("=== LOGIN SUCCESS ===");
+console.log("Secret used to SIGN:", process.env.JWTSECRET);
+console.log("Token generated:", token);
+console.log("Token expires at:", new Date(jwt.decode(token).exp * 1000));
     const { password: _, ...userWithoutPassword } = user;
 
     return res.status(200).json({

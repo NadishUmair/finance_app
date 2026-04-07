@@ -16,7 +16,7 @@ export default function ForgotPassword() {
     setIsLoading(true);
 
     try {
-      const res = await axios.post(`${BASE_URL}/forgot-password`, { email });
+      const res = await axios.post(`${BASE_URL}/auth/forgot-password`, { email });
       setMessage("OTP sent to your email. Redirecting to reset page...");
 
       setTimeout(() => {

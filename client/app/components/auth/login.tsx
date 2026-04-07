@@ -35,6 +35,7 @@ export default function Login() {
       });
 
       console.log("response", response);
+      localStorage.setItem("token", response.data.accessToken);
       setTimeout(() => {
         navigate("/dashboard");
       }, 1000);

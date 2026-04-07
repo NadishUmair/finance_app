@@ -52,7 +52,7 @@ export default function ResetPasswordFlow() {
     }
 
     try {
-      await axios.post(`${BASE_URL}/verify-otp`, {
+      await axios.post(`${BASE_URL}/auth/verify-otp`, {
         email,
         otp: finalOtp,
       });
@@ -73,7 +73,7 @@ export default function ResetPasswordFlow() {
     }
 
     try {
-      await axios.patch(`${BASE_URL}/reset-password`, {
+      await axios.patch(`${BASE_URL}/auth/reset-password`, {
         email,
         otp: otp.join(""),
         newPassword: password,

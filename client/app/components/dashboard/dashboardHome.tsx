@@ -11,7 +11,8 @@ import {
   Calculator,
   Menu,
   X,
-  LogOut
+  LogOut,
+  Building2
 } from 'lucide-react';
 
 import FinanceDashboard from './finance-dashboard';
@@ -21,10 +22,11 @@ import AutoBookkeeping from './auto-bookkeeping';
 import CashFlowInsights from './cash-flow-insights';
 import ReportsGeneration from './reports-generation';
 import Transactions from './transactions';
+import SetupWorkspace from './setupWorkspace';
 
 
 
-type Feature = 'dashboard' | 'expenses' | 'invoices' | 'bookkeeping' | 'reports' | 'cashflow' | 'transactions';
+type Feature = 'dashboard' | 'expenses' | 'invoices' | 'bookkeeping' | 'reports' | 'cashflow' | 'transactions' | 'setup';
 
 const navigationItems = [
   { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -34,6 +36,7 @@ const navigationItems = [
   { id: 'bookkeeping', label: 'Auto Bookkeeping', icon: Calculator },
   { id: 'reports', label: 'Reports', icon: TrendingUp },
   { id: 'cashflow', label: 'Cash Flow', icon: CreditCard },
+  { id: 'setup', label: 'Setup Workspace', icon: Building2 },
 ];
 
 export default function Home() {
@@ -63,6 +66,8 @@ export default function Home() {
         return <ReportsGeneration />;
       case 'cashflow':
         return <CashFlowInsights />;
+      case 'setup':
+        return <SetupWorkspace />;
       default:
         return <FinanceDashboard />;
     }

@@ -49,56 +49,36 @@ Return ONLY JSON:
 
 // 🔁 CORE PROCESS FUNCTION (USED EVERYWHERE)
 async function processTransaction(tx) {
-  try {
-    // 🧠 1. Check memory (avoid repeated AI calls)
-    const existing = await prisma.transaction.findFirst({
-      where: {
-        description: tx.description,
-        aiCategory: { not: null },
-      },
-      select: {
-        aiCategory: true,
-        aiConfidence: true,
-      },
-    });
+  // ... your existing AI categorization code ...
 
-    let aiCategory = null;
-    let aiConfidence = null;
+  // ✅ Fetch org's base currency
+  const org = await prisma.organization.findUnique({
+    where: { id: Number(tx.organizationId) },
+    select: { baseCurrency: true },
+  });
 
-    if (existing) {
-      aiCategory = existing.aiCategory;
-      aiConfidence = existing.aiConfidence;
-    } else {
-      const aiResult = await categorizeTransaction(
-        tx.description,
-        tx.amount,
-        tx.type
-      );
-      aiCategory = aiResult.aiCategory;
-      aiConfidence = aiResult.aiConfidence;
-    }
+  const baseCurrency = org?.baseCurrency || 'USD';
+  const txCurrency = tx.currency;
 
-    // 🔧 2. Normalize data
-    return {
-      organizationId: tx.organizationId,
-      fromAccountId: tx.fromAccountId,
-      toAccountId: tx.toAccountId || null,
-      categoryId: tx.categoryId || null,
-      invoiceId: tx.invoiceId || null,
-      type: tx.type,
-      status: tx.status || "PENDING",
-      amount: Number(tx.amount),
-      currency: tx.currency || "USD",
-      date: new Date(tx.date),
-      description: tx.description || "",
-      reference: tx.reference || null,
-      aiCategory,
-      aiConfidence,
-    };
-  } catch (error) {
-    console.error("processTransaction error:", error);
-    throw error;
+  let baseAmount = Number(tx.amount);
+  let exchangeRate = 1;
+
+  // ✅ Convert if currencies differ
+  if (txCurrency !== baseCurrency) {
+    const rate = await getExchangeRate(txCurrency, baseCurrency);
+    exchangeRate = rate;
+    baseAmount = Number(tx.amount) * rate;
   }
+
+  return {
+    // ... existing fields ...
+    amount:       Number(tx.amount),
+    currency:     txCurrency,
+    baseAmount:   parseFloat(baseAmount.toFixed(2)),
+    baseCurrency,
+    exchangeRate,
+    rateDate:     new Date(),
+  };
 }
 
 
@@ -107,37 +87,46 @@ exports.createTransaction = async (req, res) => {
   try {
     const data = req.body;
 
-    if (!data.organizationId || !data.fromAccountId || !data.amount || !data.date) {
-      return res.status(400).json({
-        success: false,
-        message: "Required fields missing",
-      });
+    // Validation
+    if (!data.organizationId || !data.fromAccountId || !data.date) {
+      return res.status(400).json({ success: false, message: 'Required fields missing' });
+    }
+
+    if (!data.amount || Number(data.amount) <= 0) {
+      return res.status(400).json({ success: false, message: 'Amount must be greater than 0' });
+    }
+
+    if (data.type === 'TRANSFER' && !data.toAccountId) {
+      return res.status(400).json({ success: false, message: 'toAccountId required for transfers' });
+    }
+
+    // Verify account belongs to org
+    const account = await prisma.account.findFirst({
+      where: { id: Number(data.fromAccountId), organizationId: Number(data.organizationId) },
+    });
+
+    if (!account) {
+      return res.status(403).json({ success: false, message: 'Account not found or access denied' });
     }
 
     const processed = await processTransaction(data);
 
     const transaction = await prisma.transaction.create({
       data: processed,
-      include: {
-        fromAccount: true,
-        toAccount: true,
-        category: true,
-      },
+      include: { fromAccount: true, toAccount: true, category: true },
     });
 
-    return res.status(201).json({
-      success: true,
-      data: transaction,
-    });
+    return res.status(201).json({ success: true, data: transaction });
+
   } catch (error) {
-    console.error("createTransaction error:", error);
+    console.error('createTransaction error:', error);
     return res.status(500).json({
       success: false,
-      message: "Internal server error",
+      message: 'Internal server error',
+      ...(process.env.NODE_ENV === 'development' && { error: error.message }),
     });
   }
 };
-
 
 // 🚀 BULK CREATE (CSV IMPORT)
 exports.bulkCreateTransactions = async (req, res) => {
