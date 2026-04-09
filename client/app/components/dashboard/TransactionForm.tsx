@@ -69,6 +69,8 @@ export default function TransactionForm({
       new Date(formData.date)
     );
 
+    console.log("categories in form", categories);
+
   const [errors, setErrors] =
     useState<Partial<
       Record<keyof TransactionFormData, string>
@@ -79,7 +81,7 @@ export default function TransactionForm({
   /* ============================= */
 
   useEffect(() => {
-    const account = accounts.find(
+    const account = accounts?.find(
       a => a.id === formData.fromAccountId
     );
 
@@ -186,12 +188,7 @@ export default function TransactionForm({
   /* FILTER ACCOUNTS */
   /* ============================= */
 
-  const filteredAccounts =
-    accounts.filter(account =>
-      formData.type === 'TRANSFER'
-        ? true
-        : account.type !== 'CREDIT_CARD'
-    );
+
 
   return (
 
@@ -288,7 +285,7 @@ export default function TransactionForm({
                   Select Account
                 </option>
 
-                {filteredAccounts.map(acc => (
+                {accounts?.map(acc => (
 
                   <option
                     key={acc.id}
@@ -445,7 +442,7 @@ export default function TransactionForm({
                   Select Category
                 </option>
 
-                {categories.map(cat => (
+                {categories?.map(cat => (
 
                   <option
                     key={cat.id}

@@ -4,11 +4,11 @@ export const createAccount = async (data: {
   name: string;
   organizationId: number;
 }) => {
-  const response = await api.post("/accounts/create", data);
+  const response = await api.post("/setup/create-account", data);
   return response.data;
 };
 
-export const getAccounts = async (organizationId: number) => {
-  const response = await api.get(`/accounts/${organizationId}`);
+export const getAccounts = async () => {
+  const response = await api.get("/setup/accounts");
   return response.data;
 };

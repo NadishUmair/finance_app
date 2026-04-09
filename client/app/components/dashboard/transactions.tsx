@@ -6,6 +6,8 @@ import CSVImport from '../CSVImport';
 
 import { useTransactions } from '../../hooks/useTransactions';
 import { Button } from '../ui/button';
+import { getCategories } from '~/services/categoryServices';
+import { getAccounts } from '~/services/accountServices';
 
 interface Account {
   id: number;
@@ -27,7 +29,8 @@ export default function Transactions() {
   const [editingTransaction, setEditingTransaction] = useState<any>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [loadingAccounts, setLoadingAccounts] = useState(false);
   const {
     transactions,
     loading,
@@ -47,34 +50,40 @@ export default function Transactions() {
     sortOrder: 'desc',
   });
 
-  useEffect(() => {
-    fetchAccounts();
-    fetchCategories();
+  const loadAccounts = async () => {
+      try {
+        setLoadingAccounts(true);
+        const response = await getAccounts();
+        setAccounts(response?.accounts);
+      } catch (error) {
+        console.error("Failed to load accounts:", error);
+      } finally {
+        setLoadingAccounts(false);
+      }
+    };
+
+
+  const loadCategories = async () => {
+  try {
+    setLoadingCategories(true);
+    const res = await getCategories(); // ✅ clean, no shape handling here
+    console.log("Fetched categories:", res);
+    setCategories(res?.categories);
+  } catch (error) {
+    console.error("Failed to load categories:", error);
+  } finally {
+    setLoadingCategories(false);
+  }
+};
+
+ useEffect(() => {
+    loadAccounts();
+    loadCategories();
   }, []);
 
-  const fetchAccounts = async () => {
-    try {
-      const response = await fetch('/api/accounts?organizationId=1');
-      const data = await response.json();
-      if (data.success) {
-        setAccounts(data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching accounts:', error);
-    }
-  };
 
-  const fetchCategories = async () => {
-    try {
-      const response = await fetch('/api/categories?organizationId=1');
-      const data = await response.json();
-      if (data.success) {
-        setCategories(data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    }
-  };
+
+  
 
   const handleCreateTransaction = () => {
     setEditingTransaction(null);

@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Building2, Tag, FileUp } from "lucide-react";
 import CreateCategoryModal from "../modals/createCategroyModal";
-import api from "../../lib/axiosInstance"; // ✅ your configured axios instance
+import { Pencil, Trash2 } from "lucide-react";
 
+import EditAccountModal from "../modals/editAccountModals";
+import DeleteAccountModal from "../modals/deleteAccountModal";
+
+import EditCategoryModal from "../modals/editCategoryModal";
+import DeleteCategoryModal from "../modals/deleteCategoryModal";
+import api from "../../lib/axiosInstance";
 /* ================= TYPES ================= */
 
 interface Account {
@@ -48,14 +54,23 @@ function Modal({
 /* ================= MAIN ================= */
 
 export default function SetupWorkspace() {
-
   /* ================= STATE ================= */
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [activeTab, setActiveTab] = useState<"accounts" | "categories" | "actions">("accounts");
+  const [activeTab, setActiveTab] = useState<
+    "accounts" | "categories" | "actions"
+  >("accounts");
   const [loadingAccounts, setLoadingAccounts] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(false);
+
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [deletingAccount, setDeletingAccount] = useState<Account | null>(null);
+
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [deletingCategory, setDeletingCategory] = useState<Category | null>(
+    null,
+  );
 
   const [showAccountForm, setShowAccountForm] = useState(false);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
@@ -67,8 +82,8 @@ export default function SetupWorkspace() {
   const loadAccounts = async () => {
     try {
       setLoadingAccounts(true);
-      const response = await api.get(`/accounts/${ORGANIZATION_ID}`);
-      setAccounts(response.data);
+      const response = await api.get(`/setup/accounts`);
+      setAccounts(response?.data?.accounts);
     } catch (error) {
       console.error("Failed to load accounts:", error);
     } finally {
@@ -99,11 +114,13 @@ export default function SetupWorkspace() {
   const handleCreateAccount = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
-    const name = (form.elements.namedItem("accountName") as HTMLInputElement).value;
-    const type = (form.elements.namedItem("accountType") as HTMLSelectElement).value;
+    const name = (form.elements.namedItem("accountName") as HTMLInputElement)
+      .value;
+    const type = (form.elements.namedItem("accountType") as HTMLSelectElement)
+      .value;
 
     try {
-      await api.post("/accounts/create", { name, type, organizationId: ORGANIZATION_ID });
+      await api.post("/setup/create-account", { name, type });
       await loadAccounts(); // ✅ re-fetch from backend
       setShowAccountForm(false);
     } catch (error) {
@@ -112,13 +129,14 @@ export default function SetupWorkspace() {
   };
 
   /* ================= UI ================= */
-console.log("categories", categories);
+
   return (
     <div className="min-h-screen bg-white text-black p-8">
-
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-semibold tracking-tight">Workspace Setup</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">
+          Workspace Setup
+        </h1>
         <p className="text-gray-500 mt-2">
           Create accounts, categories, and manage your financial workspace.
         </p>
@@ -157,21 +175,42 @@ console.log("categories", categories);
 
           <div className="border rounded-lg divide-y">
             {loadingAccounts ? (
-              <div className="p-6 text-gray-500 text-center">Loading accounts...</div>
-            ) : accounts.length === 0 ? (
               <div className="p-6 text-gray-500 text-center">
-                No accounts yet.<br />Create your first account to begin.
+                Loading accounts...
+              </div>
+            ) : accounts?.length === 0 ? (
+              <div className="p-6 text-gray-500 text-center">
+                No accounts yet.
+                <br />
+                Create your first account to begin.
               </div>
             ) : (
-              accounts.map((account) => (
+              accounts?.map((account) => (
                 <div
                   key={account.id}
-                  className="flex items-center gap-3 p-4 hover:bg-gray-50"
+                  className="flex justify-between  items-center gap-3 p-4 hover:bg-gray-50"
                 >
-                  <Building2 className="h-5 w-5 text-gray-600" />
-                  <div>
-                    <p className="font-medium">{account.name}</p>
-                    <p className="text-xs text-gray-500">{account.type}</p>
+                  <div className="flex items-center gap-3">
+                    <Building2 className="h-5 w-5 text-gray-600" />
+                    <div>
+                      <p className="font-medium">{account.name}</p>
+                      <p className="text-xs text-gray-500">{account.type}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setEditingAccount(account)}
+                      className="p-2 hover:bg-gray-200 rounded"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+
+                    <button
+                      onClick={() => setDeletingAccount(account)}
+                      className="p-2 hover:bg-red-100 text-red-600 rounded"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               ))
@@ -196,19 +235,40 @@ console.log("categories", categories);
 
           <div className="border rounded-lg divide-y">
             {loadingCategories ? (
-              <div className="p-6 text-gray-500 text-center">Loading categories...</div>
+              <div className="p-6 text-gray-500 text-center">
+                Loading categories...
+              </div>
             ) : categories?.length === 0 ? (
               <div className="p-6 text-gray-500 text-center">
-                No categories yet.<br />Create categories to organize transactions.
+                No categories yet.
+                <br />
+                Create categories to organize transactions.
               </div>
             ) : (
               categories?.map((category) => (
                 <div
                   key={category.id}
-                  className="flex items-center gap-3 p-4 hover:bg-gray-50"
+                  className="flex justify-between items-center gap-3 p-4 hover:bg-gray-50"
                 >
-                  <Tag className="h-5 w-5 text-gray-600" />
-                  <p className="font-medium">{category.name}</p>
+                  <div className="flex items-center gap-3">
+                    <Tag className="h-5 w-5 text-gray-600" />
+                    <p className="font-medium">{category.name}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setEditingCategory(category)}
+                      className="p-2 hover:bg-gray-200 rounded"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+
+                    <button
+                      onClick={() => setDeletingCategory(category)}
+                      className="p-2 hover:bg-red-100 text-red-600 rounded"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               ))
             )}
@@ -226,7 +286,9 @@ console.log("categories", categories);
               className="border rounded-lg p-6 hover:bg-black hover:text-white transition text-left"
             >
               <h3 className="font-semibold mb-2">Create Transaction</h3>
-              <p className="text-sm text-gray-500">Add income, expense, or transfer manually.</p>
+              <p className="text-sm text-gray-500">
+                Add income, expense, or transfer manually.
+              </p>
             </button>
 
             <button
@@ -235,7 +297,9 @@ console.log("categories", categories);
             >
               <FileUp className="h-6 w-6 mb-3" />
               <h3 className="font-semibold mb-2">Import CSV</h3>
-              <p className="text-sm text-gray-500">Upload bank statement CSV.</p>
+              <p className="text-sm text-gray-500">
+                Upload bank statement CSV.
+              </p>
             </button>
           </div>
         </div>
@@ -251,13 +315,20 @@ console.log("categories", categories);
               required
               className="w-full border p-2 rounded"
             />
-            <select name="accountType" required className="w-full border p-2 rounded">
+            <select
+              name="accountType"
+              required
+              className="w-full border p-2 rounded"
+            >
               <option value="">Select Type</option>
-              <option value="Bank">Bank</option>
-              <option value="Cash">Cash</option>
-              <option value="Credit Card">Credit Card</option>
+              <option value="BANK">Bank</option>
+              <option value="CASH">Cash</option>
+              <option value="CREDIT_CARD">Credit Card</option>
             </select>
-            <button type="submit" className="w-full bg-black text-white py-2 rounded">
+            <button
+              type="submit"
+              className="w-full bg-black text-white py-2 rounded"
+            >
               Save Account
             </button>
           </form>
@@ -275,11 +346,25 @@ console.log("categories", categories);
 
       {/* ================= TRANSACTION MODAL ================= */}
       {showTransactionForm && (
-        <Modal title="Create Transaction" onClose={() => setShowTransactionForm(false)}>
+        <Modal
+          title="Create Transaction"
+          onClose={() => setShowTransactionForm(false)}
+        >
           <form className="space-y-4">
-            <input type="number" placeholder="Amount" className="w-full border p-2 rounded" />
-            <input type="text" placeholder="Description" className="w-full border p-2 rounded" />
-            <button type="submit" className="w-full bg-black text-white py-2 rounded">
+            <input
+              type="number"
+              placeholder="Amount"
+              className="w-full border p-2 rounded"
+            />
+            <input
+              type="text"
+              placeholder="Description"
+              className="w-full border p-2 rounded"
+            />
+            <button
+              type="submit"
+              className="w-full bg-black text-white py-2 rounded"
+            >
               Save Transaction
             </button>
           </form>
@@ -290,12 +375,54 @@ console.log("categories", categories);
       {showCSVImport && (
         <Modal title="Import CSV" onClose={() => setShowCSVImport(false)}>
           <div className="space-y-4">
-            <input type="file" accept=".csv" className="w-full border p-2 rounded" />
-            <button className="w-full bg-black text-white py-2 rounded">Upload CSV</button>
+            <input
+              type="file"
+              accept=".csv"
+              className="w-full border p-2 rounded"
+            />
+            <button className="w-full bg-black text-white py-2 rounded">
+              Upload CSV
+            </button>
           </div>
         </Modal>
       )}
 
+      {/* ================= EDIT/DELETE MODALS ================= */}
+      {/* ACCOUNT MODALS */}
+
+      {editingAccount && (
+        <EditAccountModal
+          account={editingAccount}
+          onClose={() => setEditingAccount(null)}
+          onSuccess={loadAccounts}
+        />
+      )}
+
+      {deletingAccount && (
+        <DeleteAccountModal
+          account={deletingAccount}
+          onClose={() => setDeletingAccount(null)}
+          onSuccess={loadAccounts}
+        />
+      )}
+
+      {/* CATEGORY MODALS */}
+
+      {editingCategory && (
+        <EditCategoryModal
+          category={editingCategory}
+          onClose={() => setEditingCategory(null)}
+          onSuccess={loadCategories}
+        />
+      )}
+
+      {deletingCategory && (
+        <DeleteCategoryModal
+          category={deletingCategory}
+          onClose={() => setDeletingCategory(null)}
+          onSuccess={loadCategories}
+        />
+      )}
     </div>
   );
 }

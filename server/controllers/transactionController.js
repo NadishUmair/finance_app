@@ -1,12 +1,11 @@
 const { prisma } = require("../config/db");
-const Anthropic = require("@anthropic-ai/sdk");
+
 const fs = require('fs');
 const Papa = require('papaparse');
+const Groq = require('groq-sdk');
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
 
 
 
@@ -81,6 +80,91 @@ async function processTransaction(tx) {
   };
 }
 
+
+
+exports.importCSV = async (req, res) => {
+  try {
+    const organizationId = req.user.organizationId;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
+    }
+
+    // ✅ Read file and strip BOM
+    let csvContent = fs.readFileSync(file.path, 'utf8');
+    csvContent = csvContent.replace(/^\uFEFF/, '');  // strip BOM
+    csvContent = csvContent.replace(/^\ï»¿/, '');    // strip if already decoded wrong
+
+    // ✅ Parse CSV
+    const parsed = Papa.parse(csvContent, {
+      header: true,
+      skipEmptyLines: true,
+      transformHeader: (header) => header.trim(), // trim whitespace from headers
+    });
+
+    console.log("Headers found:", parsed.meta.fields);
+    console.log("First row:", parsed.data[0]);
+
+    if (!parsed.data || parsed.data.length === 0) {
+      return res.status(400).json({ success: false, message: 'CSV is empty or invalid' });
+    }
+
+    // ✅ Map CSV rows to transaction format
+    const transactions = parsed.data.map((row) => {
+      // Log raw row to see actual column names
+      console.log("Row keys:", Object.keys(row));
+
+      return {
+        organizationId: Number(organizationId),
+        fromAccountId:  Number(row['fromAccountId'] || row['account_id'] || row['Account']),
+        amount:         parseFloat(row['amount']  || row['Amount']  || row['AMOUNT']),
+        type:           row['type']        || row['Type']        || 'EXPENSE',
+        description:    row['description'] || row['Description'] || row['Narration'] || '',
+        date:           new Date(row['date'] || row['Date'] || row['DATE']),
+        currency:       row['currency']    || row['Currency']    || 'USD',
+        reference:      row['reference']   || row['Reference']   || '',
+      };
+    }).filter(tx => 
+      !isNaN(tx.amount) && 
+      tx.amount > 0 && 
+      !isNaN(tx.fromAccountId) &&
+      tx.date instanceof Date && !isNaN(tx.date)
+    );
+
+    console.log(`Parsed ${transactions.length} valid transactions`);
+
+    if (transactions.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'No valid transactions found in CSV',
+        headers: parsed.meta.fields  // ← send back actual headers so frontend can map
+      });
+    }
+
+    // ✅ Process & insert
+    const processedTransactions = [];
+    for (const tx of transactions) {
+      const processed = await processTransaction(tx);
+      processedTransactions.push(processed);
+    }
+
+    await prisma.transaction.createMany({ data: processedTransactions });
+
+    // ✅ Cleanup temp file
+    fs.unlinkSync(file.path);
+
+    return res.status(201).json({
+      success: true,
+      message: `${processedTransactions.length} transactions imported`,
+      count: processedTransactions.length,
+    });
+
+  } catch (error) {
+    console.error('CSV import error:', error);
+    return res.status(500).json({ success: false, message: 'Import failed', error: error.message });
+  }
+};
 
 // ✅ CREATE SINGLE TRANSACTION
 exports.createTransaction = async (req, res) => {
@@ -394,30 +478,182 @@ exports.deleteTransaction = async (req, res) => {
 };
 
 
+// exports.uploadCSV = async (req, res) => {
+//   try {
+//     console.log("body", req.body);
+//     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+//     console.log("Uploaded file:", req.file);
+
+//     // ✅ Strip BOM before parsing
+//     let fileContent = fs.readFileSync(req.file.path, 'utf-8');
+//     fileContent = fileContent.replace(/^\uFEFF/, '');
+
+//     const results = Papa.parse(fileContent, {
+//       header: true,
+//       skipEmptyLines: true,
+//       transformHeader: (h) => h.trim(), // ✅ strip whitespace from headers
+//     });
+
+//     console.log("Headers found:", results.meta.fields); // ✅ see exact column names
+
+//     const transactions = results.data
+//       .map((row) => {
+//         const amount = parseFloat(row['Amount'] || row['amount'] || '0');
+
+//         return {
+//           date:        row['Txn Date']    || row['Date']        || row['date'],
+//           description: row['Description'] || row['Memo']        || row['Narration'] || '',
+//           amount:      Math.abs(amount),
+//           type:        amount >= 0 ? 'INCOME' : 'EXPENSE',
+//           reference:   row['Reference']   || row['Ref']         || row['Chq/Ref No.'] || '',
+//         };
+//       })
+//       .filter((tx) => tx.amount > 0 && tx.date); // ✅ skip rows with no amount or date
+
+//     console.log(`Parsed ${transactions.length} valid transactions`);
+
+//     fs.unlinkSync(req.file.path); // cleanup
+
+//     res.json({ 
+//       transactions,
+//       count: transactions.length,
+//       headers: results.meta.fields, // ✅ send headers to frontend for debugging
+//     });
+
+//   } catch (err) {
+//     // ✅ Cleanup temp file even if error occurs
+//     if (req.file?.path && fs.existsSync(req.file.path)) {
+//       fs.unlinkSync(req.file.path);
+//     }
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
+
+
+
 exports.uploadCSV = async (req, res) => {
-    try {
-      console.log("body",req.body);
-      if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-      console.log("Uploaded file:", req.file);
-      
-      const fileContent = fs.readFileSync(req.file.path, 'utf-8');
-      const results = Papa.parse(fileContent, { header: true, skipEmptyLines: true });
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    console.log("📁 File received:", req.file.originalname, `(${req.file.size} bytes)`);
 
-      const transactions = results.data.map((row) => {
-        const amount = parseFloat(row['Amount'] || '0');
-        return {
-          date: row['Txn Date'] || row['Date'],
-          description: row['Description'] || row['Memo'],
-          amount: Math.abs(amount),
-          type: amount > 0 ? 'INCOME' : 'EXPENSE',
-          reference: row['Reference'] || row['Ref'] || ''
-        };
-      });
+    const rawBuffer = fs.readFileSync(req.file.path);
+    console.log("📦 Raw buffer size:", rawBuffer.length);
+    console.log("🔍 First 6 bytes (hex):", rawBuffer.slice(0, 6).toString('hex'));
 
-      fs.unlinkSync(req.file.path); // cleanup temp file
-      res.json({ transactions });
-    } catch (err) {
-      res.status(500).json({ error: err.message });
+    // ✅ Strip BOM
+    let fileContent;
+    if (rawBuffer[0] === 0xEF && rawBuffer[1] === 0xBB && rawBuffer[2] === 0xBF) {
+      console.log("✅ BOM detected and stripped");
+      fileContent = rawBuffer.slice(3).toString('utf8');
+    } else {
+      console.log("ℹ️ No BOM detected");
+      fileContent = rawBuffer.toString('utf8');
     }
+
+    const totalLines = fileContent.split('\n').length;
+    console.log("📄 Total lines in file:", totalLines);
+    console.log("📄 First 5 lines:");
+    fileContent.split('\n').slice(0, 5).forEach((line, i) => {
+      console.log(`  Line ${i + 1}: ${line}`);
+    });
+
+    fs.unlinkSync(req.file.path);
+    console.log("🗑️ Temp file deleted");
+
+    // ✅ Send to Groq AI for parsing
+    console.log("🤖 Sending to Groq AI...");
+    const transactions = await parseCSVWithAI(fileContent);
+    console.log("🤖 Groq AI returned:", transactions?.length ?? 0, "transactions");
+    if (transactions?.length > 0) {
+      console.log("🤖 First parsed transaction:", transactions[0]);
+    }
+
+    if (!transactions || transactions.length === 0) {
+      return res.status(400).json({
+        error: 'Could not parse CSV',
+        message: 'AI could not detect transaction data. Please check your file format.',
+      });
+    }
+
+    res.json({
+      count: transactions.length,
+      transactions,
+    });
+
+  } catch (err) {
+    console.error("❌ uploadCSV error:", err.message);
+    console.error(err.stack);
+    if (req.file?.path && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+async function parseCSVWithAI(csvContent) {
+  const lines = csvContent.split('\n');
+
+  // ✅ Filter out empty lines first, then take only 30
+  const meaningfulLines = lines
+    .map(l => l.trim())
+    .filter(l => l.length > 0)
+    .slice(0, 50);
+
+  const preview = meaningfulLines.join('\n');
+  console.log("📤 Sending", meaningfulLines.length, "lines to Groq AI");
+  console.log("📝 Preview size (chars):", preview.length);
+
+  const prompt = `Parse this bank CSV. Skip metadata rows. Return ONLY a JSON array.
+
+Format: [{"date":"YYYY-MM-DD","description":"text","amount":0.00,"type":"INCOME or EXPENSE","reference":"","balance":0.00}]
+
+Rules: EXPENSE=debit(money out), INCOME=credit(money in), amount always positive, skip rows with no date or amount.
+
+CSV:
+${preview}`;
+
+  console.log("📝 Prompt length (chars):", prompt.length);
+
+  let response;
+  try {
+    response = await groq.chat.completions.create({
+      model: 'llama-3.1-8b-instant',
+      max_tokens: 3000,
+      temperature: 0,
+      messages: [
+        {
+          role: 'system',
+          content: 'Return ONLY a valid JSON array. No explanation, no markdown, no backticks.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+    });
+    console.log("✅ Groq AI response received");
+    console.log("📊 Tokens — input:", response.usage.prompt_tokens, "output:", response.usage.completion_tokens);
+  } catch (aiError) {
+    console.error("❌ Groq API error:", aiError.message);
+    throw aiError;
   }
 
+  const text = response.choices[0].message.content.trim();
+  console.log("📨 Raw Groq response (first 300 chars):", text.slice(0, 300));
+
+  const clean = text.replace(/```json|```/g, '').trim();
+
+  let parsed;
+  try {
+    parsed = JSON.parse(clean);
+    console.log("✅ JSON parsed successfully, count:", parsed.length);
+  } catch (parseError) {
+    console.error("❌ JSON parse failed:", parseError.message);
+    console.error("❌ Content that failed:", clean.slice(0, 500));
+    throw new Error("AI returned invalid JSON: " + parseError.message);
+  }
+
+  return parsed;
+}

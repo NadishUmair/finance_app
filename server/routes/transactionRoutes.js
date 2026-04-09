@@ -15,6 +15,7 @@ const { protectedRoute } = require("../middlewares/authMiddleware");
 router.post("/",protectedRoute, createTransaction);
 router.post("/bulk", protectedRoute, bulkCreateTransactions);
 router.post('/upload-csv',upload.single('file'), uploadCSV);
+router.post('/upload-csv',upload.single('file'), uploadCSV);
 router.get("/", protectedRoute, getTransactions);
 router.get("/:id", protectedRoute, getTransactionById);
 router.patch("/:id", protectedRoute, updateTransaction);
