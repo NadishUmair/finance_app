@@ -128,6 +128,7 @@ export default function SetupWorkspace() {
     }
   };
 
+  console.log("categories",categories);
   /* ================= UI ================= */
 
   return (
@@ -251,7 +252,7 @@ export default function SetupWorkspace() {
                   className="flex justify-between items-center gap-3 p-4 hover:bg-gray-50"
                 >
                   <div className="flex items-center gap-3">
-                    <Tag className="h-5 w-5 text-gray-600" />
+                    <span>{category?.icon}</span>
                     <p className="font-medium">{category.name}</p>
                   </div>
                   <div className="flex gap-2">

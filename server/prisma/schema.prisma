@@ -89,6 +89,7 @@ model Organization {
   invoices     Invoice[]
   recurringRules RecurringRule[]
   auditLogs    AuditLog[]
+  budgets        Budget[] 
 }
 
 model Membership {
@@ -119,77 +120,72 @@ model Account {
   updatedAt      DateTime    @updatedAt
 
   organization      Organization  @relation(fields: [organizationId], references: [id])
-  fromTransactions  Transaction[] @relation("FromAccount")
-  toTransactions    Transaction[] @relation("ToAccount")
-
+  transactions Transaction[]
   @@index([organizationId])
 }
-
-// ─── Categories ──────────────────────────────────────────────────────────────
 
 model Category {
   id             Int      @id @default(autoincrement())
   organizationId Int
   name           String
-  color          String?  // hex color for UI
-  icon           String?  // icon name
+  color          String?
+  icon           String?
   isDefault      Boolean  @default(false)
-  parentId       Int?     // for subcategories
+  parentId       Int?
 
   organization Organization  @relation(fields: [organizationId], references: [id])
   parent       Category?     @relation("SubCategories", fields: [parentId], references: [id])
   children     Category[]    @relation("SubCategories")
   transactions Transaction[]
+  budgets      Budget[]      // ✅ add this
 
   @@unique([organizationId, name])
   @@index([organizationId])
 }
 
-// ─── Transactions ─────────────────────────────────────────────────────────────
-
 model Transaction {
   id             Int               @id @default(autoincrement())
   organizationId Int
-  fromAccountId  Int
-  toAccountId    Int?              // used for transfers
+  accountId      Int
   categoryId     Int?
-  invoiceId      Int?              // links payment to an invoice
+  invoiceId      Int?
 
-  type           TransactionType
-  status         TransactionStatus @default(PENDING)
+  type              TransactionType
+  status            TransactionStatus @default(PENDING)
+  amount            Decimal           @db.Decimal(15, 2)
+  description       String?
+  reference         String?
+  date              DateTime
+  categoryConfirmed Boolean           @default(false) // ✅ replaces isAiReviewed
 
-  amount         Decimal           @db.Decimal(15, 2)
-  currency       String            @default("USD")
-  exchangeRate   Decimal?          @db.Decimal(10, 6) // for multi-currency
-
-  description    String?
-  notes          String?
-  reference      String?           // e.g. check number, bank ref
-  date           DateTime
-
-  // AI fields
-  aiCategory     String?           // Claude's suggested category
-  aiConfidence   Float?            // 0.0 - 1.0
-  isAiReviewed   Boolean           @default(false)
-
-  // Receipt / attachment
-  receiptUrl     String?
+  // ❌ REMOVE: aiCategory, aiConfidence, isAiReviewed
 
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id])
-  fromAccount  Account      @relation("FromAccount", fields: [fromAccountId], references: [id])
-  toAccount    Account?     @relation("ToAccount", fields: [toAccountId], references: [id])
+  account      Account      @relation(fields: [accountId], references: [id])
   category     Category?    @relation(fields: [categoryId], references: [id])
   invoice      Invoice?     @relation(fields: [invoiceId], references: [id])
 
   @@index([organizationId])
   @@index([date])
-  @@index([categoryId])
-  @@index([status])
+  @@index([accountId])
 }
 
+// ✅ ADD THIS - needed for Expense Tracking tab
+model Budget {
+  id             Int      @id @default(autoincrement())
+  organizationId Int
+  categoryId     Int
+  amount         Decimal  @db.Decimal(15, 2)
+  period         String   @default("MONTHLY")
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  category       Category     @relation(fields: [categoryId], references: [id])
+
+  @@unique([organizationId, categoryId, period])
+}
 // ─── Invoices ────────────────────────────────────────────────────────────────
 
 model Invoice {

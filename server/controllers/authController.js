@@ -2,6 +2,7 @@ const { prisma } = require("../config/db");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { sendEmail } = require("../util/nodeMailer");
+const { seedCategoriesForOrg } = require("../util/seedCategories");
 
 // SignUp controller
 exports.SignUp = async (req, res) => {
@@ -47,7 +48,7 @@ exports.SignUp = async (req, res) => {
           createdAt: new Date(),
         },
       });
-
+        await seedCategoriesForOrg(org.id); // ✅ auto-seed on signup
       await tx.membership.create({
         data: {
           userId: user.id,

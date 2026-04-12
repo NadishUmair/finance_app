@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { Edit, Trash2, Search, Filter, Plus } from 'lucide-react';
 import CategoryBadge from '../CategoryBadge';
 import { Button } from '../ui/button';
+import { getTransactions } from "../../services/transactionsServices";
 
 interface Transaction {
   id: number;
@@ -32,7 +33,12 @@ interface Transaction {
     icon?: string;
   };
 }
-
+interface Pagination {
+  page: number;
+  pages: number;
+  total: number;
+  limit: number;
+}
 interface TransactionTableProps {
   transactions: Transaction[];
   onEdit: (transaction: Transaction) => void;
@@ -42,7 +48,6 @@ interface TransactionTableProps {
 }
 
 export default function TransactionTable({
-  transactions,
   onEdit,
   onDelete,
   onCreate,
@@ -51,7 +56,10 @@ export default function TransactionTable({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-
+  const [loadingTransactions, setLoadingTransactions] = useState(loading);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState<Pagination | null>(null);
+  const [transactions,setTransactions]=useState<Transaction[]>([]);
   const filteredTransactions = transactions.filter(transaction => {
     const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          transaction.aiCategory?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -82,6 +90,25 @@ export default function TransactionTable({
     }
   };
 
+  const loadTransactions = async () => {
+    setLoadingTransactions(true);
+    try {
+      // Simulate loading delay
+       const resposnse= await getTransactions(page);
+        setTransactions(resposnse?.data);
+        setPagination(resposnse?.pagination);
+        console.log("Transactions loaded:", resposnse);
+    } catch (error) {
+      console.error("Failed to load transactions:", error);
+    } finally {
+      setLoadingTransactions(false);
+    }
+  }
+
+    useEffect(()=>{
+      loadTransactions();
+    },[page])
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -89,6 +116,8 @@ export default function TransactionTable({
       </div>
     );
   }
+
+  
 
   return (
     <div className="bg-white shadow rounded-lg">
@@ -178,7 +207,7 @@ export default function TransactionTable({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredTransactions.map((transaction) => (
+            {filteredTransactions?.map((transaction) => (
               <tr key={transaction.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {format(new Date(transaction.date), 'MMM dd, yyyy')}
@@ -186,13 +215,13 @@ export default function TransactionTable({
                 <td className="px-6 py-4 text-sm text-gray-900">
                   <div>
                     <div className="font-medium">{transaction.description}</div>
-                    {transaction.aiCategory && (
+                    {transaction?.aiCategory && (
                       <div className="text-xs text-gray-500 flex items-center gap-1">
-                        AI: {transaction.aiCategory}
-                        {transaction.aiConfidence && (
+                        AI: {transaction?.aiCategory}
+                        {transaction?.aiConfidence && (
                           <span className={`px-1 py-0.5 rounded text-xs ${
-                            transaction.aiConfidence > 0.8 ? 'bg-green-100 text-green-800' :
-                            transaction.aiConfidence > 0.6 ? 'bg-yellow-100 text-yellow-800' :
+                            transaction?.aiConfidence > 0.8 ? 'bg-green-100 text-green-800' :
+                            transaction?.aiConfidence > 0.6 ? 'bg-yellow-100 text-yellow-800' :
                             'bg-red-100 text-red-800'
                           }`}>
                             {(transaction.aiConfidence * 100).toFixed(0)}%
@@ -203,34 +232,34 @@ export default function TransactionTable({
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {transaction.category ? (
+                  {transaction?.category ? (
                     <CategoryBadge category={transaction.category} />
                   ) : (
                     <span className="text-gray-400">Uncategorized</span>
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {transaction.fromAccount.name}
-                  {transaction.toAccount && transaction.type === 'TRANSFER' && (
+                  {transaction?.account?.name}
+                  {transaction?.toAccount && transaction?.type === 'TRANSFER' && (
                     <div className="text-xs text-gray-500">
-                      → {transaction.toAccount.name}
+                      → {transaction?.account?.name}
                     </div>
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   <span className={`font-medium ${getTypeColor(transaction.type)}`}>
-                    {transaction.type}
+                    {transaction?.type}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   <span className={`font-medium ${getTypeColor(transaction.type)}`}>
-                    {transaction.type === 'EXPENSE' ? '-' : transaction.type === 'INCOME' ? '+' : ''}
-                    ${transaction.amount.toFixed(2)}
+                    {transaction?.type === 'EXPENSE' ? '-' : transaction?.type === 'INCOME' ? '+' : ''}
+                    ${transaction?.amount}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(transaction.status)}`}>
-                    {transaction.status}
+                    {transaction?.status}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -251,6 +280,67 @@ export default function TransactionTable({
             ))}
           </tbody>
         </table>
+
+        {/* Pagination — add this after the empty state div */}
+{pagination && pagination.pages > 1 && (
+  <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+    
+    {/* Info */}
+    <p className="text-sm text-gray-500">
+      Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
+      {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
+      {pagination.total} transactions
+    </p>
+
+    {/* Controls */}
+    <div className="flex items-center gap-1">
+      {/* Prev */}
+      <button
+        onClick={() => setPage(p => p - 1)}
+        disabled={pagination.page === 1}
+        className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        Previous
+      </button>
+
+      {/* Page numbers */}
+      {Array.from({ length: pagination.pages }, (_, i) => i + 1)
+        .filter(p => p === 1 || p === pagination.pages || Math.abs(p - pagination.page) <= 1)
+        .reduce((acc: (number | string)[], p, i, arr) => {
+          if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push('...');
+          acc.push(p);
+          return acc;
+        }, [])
+        .map((p, i) => 
+          p === '...' ? (
+            <span key={`ellipsis-${i}`} className="px-2 text-gray-400">...</span>
+          ) : (
+            <button
+              key={p}
+              onClick={() => setPage(p as number)}
+              className={`px-3 py-1.5 text-sm border rounded-md ${
+                pagination.page === p
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              {p}
+            </button>
+          )
+        )
+      }
+
+      {/* Next */}
+      <button
+        onClick={() => setPage(p => p + 1)}
+        disabled={pagination.page === pagination.pages}
+        className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        Next
+      </button>
+    </div>
+  </div>
+)}
       </div>
 
       {filteredTransactions.length === 0 && (

@@ -232,4 +232,26 @@ Please follow the established code style and submit pull requests for review.
 
 ---
 
-*Last updated: April 4, 2026*
+
+
+
+✅ CSV Upload & Parsing
+✅ AI + Keyword Categorization
+✅ Transactions saved with categoryId
+✅ Categories seeded in DB
+
+*Last updated: April 12, 2026*
+
+//Next steps
+┌──────────────────────────────────────────────┐
+│  Total Income   Total Expenses   Net Balance  │
+│  $50,000        $35,000          $15,000      │
+├──────────────────────────────────────────────┤
+│  Spending by Category (pie chart)             │
+│  Food 20% | Rent 30% | Transport 10%         │
+├──────────────────────────────────────────────┤
+│  Cash Flow - last 6 months (bar chart)        │
+│  Income vs Expenses per month                 │
+├──────────────────────────────────────────────┤
+│  Recent Transactions (last 5)                 │
+└──────────────────────────────────────────────┘

@@ -8,6 +8,7 @@ const transactionRoutes = require("./routes/transactionRoutes");
 const invoiceRoutes = require("./routes/invoiceRoute");
 const reportsRoutes = require("./routes/reportsRoutes");
 const setupRoutes = require("./routes/setupRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -24,6 +25,7 @@ app.use("/api/transactions", transactionRoutes);
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/setup", setupRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 app.listen(PORT, () => {
   console.log("App is running at", PORT);

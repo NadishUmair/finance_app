@@ -27,11 +27,11 @@ export default function CategoryBadge({ category, size = 'md' }: CategoryBadgePr
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 font-medium rounded-full ${sizeClasses[size]}`}
+      className={`flex align-content-center gap-2 font-medium rounded-full ${sizeClasses[size]}`}
       style={{
-        backgroundColor: category.color ? `${category.color}20` : '#f3f4f6',
+        // backgroundColor: category.color ? `${category.color}20` : '#f3f4f6',
         color: category.color || '#374151',
-        border: category.color ? `1px solid ${category.color}40` : '1px solid #d1d5db'
+        // border: category.color ? `1px solid ${category.color}40` : '1px solid #d1d5db'
       }}
     >
       {category.icon && (

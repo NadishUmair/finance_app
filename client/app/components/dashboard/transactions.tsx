@@ -34,7 +34,6 @@ export default function Transactions() {
   const {
     transactions,
     loading,
-    error,
     pagination,
     filters,
     setFilters,
@@ -186,11 +185,11 @@ export default function Transactions() {
           </div>
         </div>
 
-        {error && (
+        {/* {error && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-800">{error}</p>
           </div>
-        )}
+        )} */}
 
         <TransactionTable
           transactions={transactions}

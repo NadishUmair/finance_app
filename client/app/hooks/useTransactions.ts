@@ -66,7 +66,6 @@ interface PaginationInfo {
 interface UseTransactionsReturn {
   transactions: Transaction[];
   loading: boolean;
-  error: string | null;
   pagination: PaginationInfo | null;
   filters: TransactionFilters;
   setFilters: (filters: Partial<TransactionFilters>) => void;
@@ -215,7 +214,6 @@ export function useTransactions(initialFilters: TransactionFilters): UseTransact
   return {
     transactions,
     loading,
-    error,
     pagination,
     filters,
     setFilters,
