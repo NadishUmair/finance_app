@@ -14,34 +14,34 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 // 🔁 CORE PROCESS FUNCTION (USED EVERYWHERE)
 async function processTransaction(tx) {
   // ... your existing AI categorization code ...
-
+  console.log("tx",tx);
   // ✅ Fetch org's base currency
   const org = await prisma.organization.findUnique({
     where: { id: Number(tx.organizationId) },
-    select: { baseCurrency: true },
+    select: { currency: true },
   });
 
-  const baseCurrency = org?.baseCurrency || 'USD';
-  const txCurrency = tx.currency;
+  // const currency = org?.currency || 'USD';
+  // const txCurrency = tx.currency;
 
   let baseAmount = Number(tx.amount);
   let exchangeRate = 1;
 
   // ✅ Convert if currencies differ
-  if (txCurrency !== baseCurrency) {
-    const rate = await getExchangeRate(txCurrency, baseCurrency);
-    exchangeRate = rate;
-    baseAmount = Number(tx.amount) * rate;
-  }
+  // if (txCurrency !== currency) {
+  //   const rate = await getExchangeRate(txCurrency, currency);
+  //   exchangeRate = rate;
+  //   baseAmount = Number(tx.amount) * rate;
+  // }
 
   return {
     // ... existing fields ...
     amount:       Number(tx.amount),
-    currency:     txCurrency,
-    baseAmount:   parseFloat(baseAmount.toFixed(2)),
-    baseCurrency,
-    exchangeRate,
-    rateDate:     new Date(),
+    type:         tx.type,
+    description:  tx.description || null,
+    date:         new Date(tx.date),
+    organizationId: tx.organizationId,
+    accountId: tx.accountId,
   };
 }
 
@@ -134,45 +134,82 @@ exports.importCSV = async (req, res) => {
 // ✅ CREATE SINGLE TRANSACTION
 exports.createTransaction = async (req, res) => {
   try {
+
+    const organizationId =
+      req.user.organizationId;
+
     const data = req.body;
 
-    // Validation
-    if (!data.organizationId || !data.fromAccountId || !data.date) {
-      return res.status(400).json({ success: false, message: 'Required fields missing' });
+    console.log("data", data);
+
+    // Validate
+    if (!data.fromAccountId || !data.date) {
+      return res.status(400).json({
+        success: false,
+        message: "Required fields missing",
+      });
     }
 
     if (!data.amount || Number(data.amount) <= 0) {
-      return res.status(400).json({ success: false, message: 'Amount must be greater than 0' });
-    }
-
-    if (data.type === 'TRANSFER' && !data.toAccountId) {
-      return res.status(400).json({ success: false, message: 'toAccountId required for transfers' });
+      return res.status(400).json({
+        success: false,
+        message: "Amount must be greater than 0",
+      });
     }
 
     // Verify account belongs to org
-    const account = await prisma.account.findFirst({
-      where: { id: Number(data.fromAccountId), organizationId: Number(data.organizationId) },
-    });
+    const account =
+      await prisma.account.findFirst({
+        where: {
+          id: Number(data.fromAccountId),
+          organizationId:
+            Number(organizationId),
+        },
+      });
 
     if (!account) {
-      return res.status(403).json({ success: false, message: 'Account not found or access denied' });
+      return res.status(403).json({
+        success: false,
+        message:
+          "Account not found or access denied",
+      });
     }
 
-    const processed = await processTransaction(data);
+    // ✅ Inject organizationId safely
+    const processed =
+      await processTransaction({
+        ...data,
+        organizationId,
+        accountId:account.id, // ✅ ensure we use the verified account ID
+      });
 
-    const transaction = await prisma.transaction.create({
-      data: processed,
-      include: { fromAccount: true, toAccount: true, category: true },
+    const transaction =
+      await prisma.transaction.create({
+        data: processed,
+
+        include: {
+          category: true,
+        },
+      });
+
+    return res.status(201).json({
+      success: true,
+      data: transaction,
     });
 
-    return res.status(201).json({ success: true, data: transaction });
-
   } catch (error) {
-    console.error('createTransaction error:', error);
+
+    console.error(
+      "createTransaction error:",
+      error
+    );
+
     return res.status(500).json({
       success: false,
-      message: 'Internal server error',
-      ...(process.env.NODE_ENV === 'development' && { error: error.message }),
+      message: "Internal server error",
+      ...(process.env.NODE_ENV === "development" && {
+        error: error.message,
+      }),
     });
   }
 };

@@ -169,12 +169,10 @@ export default function TransactionForm({
   /* SUBMIT */
   /* ============================= */
 
-  const handleSubmit = async (
-    e: React.FormEvent
-  ) => {
+  const handleSubmit = async (e: React.FormEvent ) => {
 
     e.preventDefault();
-
+   console.log("Submitting form with data:", formData);
     if (!validateForm()) return;
 
     try {

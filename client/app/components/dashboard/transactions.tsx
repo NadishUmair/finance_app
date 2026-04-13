@@ -7,7 +7,8 @@ import CSVImport from '../CSVImport';
 import { useTransactions } from '../../hooks/useTransactions';
 import { Button } from '../ui/button';
 import { getCategories } from '~/services/categoryServices';
-import { getAccounts } from '~/services/accountServices';
+import { getAccounts } from '../../services/accountServices';
+import { createTransaction } from '~/services/transactionsServices';
 
 interface Account {
   id: number;
@@ -37,7 +38,6 @@ export default function Transactions() {
     pagination,
     filters,
     setFilters,
-    createTransaction,
     updateTransaction,
     deleteTransaction,
     refreshTransactions,

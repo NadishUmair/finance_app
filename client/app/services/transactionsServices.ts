@@ -1,5 +1,13 @@
 import api from "../lib/axiosInstance";
 
+
+export const createTransaction = async (data: any) => {
+  const response = await api.post("/transactions/create", data);
+  return response.data;
+};
+
+
+
 export const importTransactions = async (data: any,accountId: number) => {
   const response = await api.post("/transactions/import-transactions", {
     transactions: data,  // ← wrap it in an object
